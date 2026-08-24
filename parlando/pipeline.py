@@ -5,15 +5,21 @@ import os
 import shutil
 import tempfile
 import time
-from typing import Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from parlando.core import (
     AudioBuffer,
     AudioStitcher,
     ChapterTimepoint,
+    CharacterProfile,
+    ChunkType,
+    GenericSpeakerDetector,
+    NarrativeChunk,
     NarrativeChunker,
     ProsodyDirector,
+    SceneAwareVoiceCaster,
     StitchedAudioResult,
+    normalize_character_input,
 )
 from parlando.config import (
     AudioFormat,
@@ -33,6 +39,8 @@ class PipelineConfig:
     backend: str = "edge"
     voice: str = "en-US-ChristopherNeural"
     dialogue_voice: Optional[str] = None
+    characters: Optional[Union[Dict[str, Any], List[Any], str]] = None
+    cast: Optional[Union[Dict[str, Any], List[Any], str]] = None
     pacing_mode: PacingMode = PacingMode.NORMAL
     speed: float = 1.0
     audio_format: AudioFormat = AudioFormat.M4B
@@ -55,6 +63,8 @@ class PipelineResult:
     chapter_timepoints: List[ChapterTimepoint]
     render_time_seconds: float
     document: ParsedDocument
+    characters: Dict[str, CharacterProfile] = dataclasses.field(default_factory=dict)
+    voice_map: Dict[str, str] = dataclasses.field(default_factory=dict)
 
 
 class AudiobookPipeline:
@@ -98,15 +108,33 @@ class AudiobookPipeline:
             output_path = f"{clean_title}{ext}"
 
         # 3. Narrative Chunking
-        all_chunks = []
+        all_chunks: List[NarrativeChunk] = []
         for chap_idx, chap in enumerate(doc.chapters):
             chap_text = f"# {chap.title}\n\n{chap.content}" if chap.title else chap.content
             chunks = self.chunker.chunk_text(chap_text, chapter_index=chap_idx)
-            for c in chunks:
-                self.director.apply_to_chunk(c, dialogue_voice_override=self.config.dialogue_voice)
             all_chunks.extend(chunks)
 
-        # 4. Neural Voice Synthesis
+        # 4. Multi-Cast Speaker Detection & Voice Allocation
+        cast_spec = self.config.characters or self.config.cast
+        detector = GenericSpeakerDetector(predefined_characters=cast_spec)
+        all_chunks = detector.attribute_chunks(all_chunks)
+
+        voice_map = SceneAwareVoiceCaster.cast_characters(
+            detector.characters,
+            engine_type=self.config.backend,
+            primary_narrator_voice=self.config.voice,
+        )
+
+        # 5. Apply Prosody & Resolved Voices to Chunks
+        for c in all_chunks:
+            if c.chunk_type == ChunkType.DIALOGUE:
+                assigned_v = self.config.dialogue_voice or voice_map.get(c.character) or self.config.voice
+                self.director.apply_to_chunk(c, dialogue_voice_override=assigned_v)
+            else:
+                # Narration, headings, and breaks always use consistent narrator voice
+                self.director.apply_to_chunk(c, dialogue_voice_override=self.config.voice)
+
+        # 6. Neural Voice Synthesis
         cache_dir = self.config.cache_dir or os.path.join(tempfile.gettempdir(), ".parlando_chunk_cache")
         engine = get_voice_engine(
             self.config.backend,
@@ -126,11 +154,11 @@ class AudiobookPipeline:
             progress_callback=_on_chunk_progress,
         )
 
-        # 5. DSP Stitching
+        # 7. DSP Stitching
         chapter_titles = [c.title for c in doc.chapters]
         stitched = self.stitcher.assemble_chunks(all_chunks, audio_paths, chapter_titles=chapter_titles)
 
-        # 6. Container Mastering
+        # 8. Container Mastering
         final_audio_path = self.exporter.export(
             audio_buffer=stitched.master_buffer,
             output_path=output_path,
@@ -141,7 +169,7 @@ class AudiobookPipeline:
             normalize_loudness=self.config.normalize_loudness,
         )
 
-        # 7. HTML5 Player
+        # 9. HTML5 Player
         player_path = None
         if self.config.generate_player:
             base_no_ext = os.path.splitext(output_path)[0]
@@ -164,4 +192,6 @@ class AudiobookPipeline:
             chapter_timepoints=stitched.chapter_timepoints,
             render_time_seconds=t_end - t_start,
             document=doc,
+            characters=detector.characters,
+            voice_map=voice_map,
         )

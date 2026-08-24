@@ -18,6 +18,7 @@ class NarrativeChunk:
     text: str
     chunk_type: ChunkType
     character: Optional[str] = None
+    voice: Optional[str] = None
     gender: Optional[str] = None
     pause_before_ms: int = 0
     pause_after_ms: int = 0

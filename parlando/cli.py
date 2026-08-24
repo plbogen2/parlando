@@ -12,6 +12,7 @@ from parlando.config import (
     VALID_NEURAL_VOICES,
     VOICE_PROFILES,
 )
+from parlando.core import normalize_character_input
 from parlando.pipeline import AudiobookPipeline, PipelineConfig
 from parlando.web import start_web_studio
 
@@ -27,7 +28,18 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("-o", "--output", help="Destination audio master path (.m4b, .mp3, .wav)")
     parser.add_argument("--backend", default="edge", choices=["edge", "openai", "gemini", "mock"], help="Neural voice synthesis backend (default: edge)")
     parser.add_argument("--voice", default="en-US-ChristopherNeural", help="Primary narrator voice (default: en-US-ChristopherNeural)")
-    parser.add_argument("--dialogue-voice", help="Voice override for character dialogue")
+    parser.add_argument("--dialogue-voice", help="Global voice override for character dialogue")
+    parser.add_argument(
+        "-c", "--character",
+        action="append",
+        dest="characters",
+        metavar="SPEC",
+        help="Specify character name, gender, and optional voice (e.g. 'Case:male:Puck', 'Linda:female:Aoede', 'Clerk:male')"
+    )
+    parser.add_argument(
+        "--cast",
+        help="Path to JSON file or JSON string defining character names, genders, and optional voices"
+    )
     parser.add_argument("--pacing", default="normal", choices=[p.value for p in PacingMode], help="Pacing preset (default: normal)")
     parser.add_argument("--speed", type=float, default=1.0, help="Global playback speed multiplier (default: 1.0)")
     parser.add_argument("--format", default="m4b", choices=["m4b", "mp3", "wav"], help="Audio container format (default: m4b)")
@@ -59,10 +71,18 @@ def main(args=None):
     audio_format = fmt_map.get(parsed.format.lower(), AudioFormat.M4B)
     pacing_mode = PacingMode(parsed.pacing)
 
+    # Merge character specs from -c / --character and --cast
+    cast_input = []
+    if parsed.characters:
+        cast_input.extend(parsed.characters)
+    if parsed.cast:
+        cast_input.append(parsed.cast)
+
     config = PipelineConfig(
         backend=parsed.backend,
         voice=parsed.voice,
         dialogue_voice=parsed.dialogue_voice,
+        characters=cast_input if cast_input else None,
         pacing_mode=pacing_mode,
         speed=parsed.speed,
         audio_format=audio_format,
@@ -81,12 +101,29 @@ def main(args=None):
 
     if parsed.dry_run:
         from parlando.parsers import DocumentParser
+        from parlando.core import GenericSpeakerDetector, NarrativeChunker, SceneAwareVoiceCaster
+
         doc = DocumentParser.from_file_or_url(parsed.input)
         print(f"\n[DRY RUN] Document: {doc.title} by {doc.author}")
         print(f"  ▸ Total chapters: {doc.total_chapters}")
         print(f"  ▸ Total words:    {doc.total_words}")
         for i, c in enumerate(doc.chapters):
             print(f"    - Chapter {i+1}: {c.title} ({c.word_count} words)")
+
+        chunker = NarrativeChunker()
+        detector = GenericSpeakerDetector(predefined_characters=cast_input)
+        all_chunks = []
+        for chap_idx, chap in enumerate(doc.chapters):
+            chap_text = f"# {chap.title}\n\n{chap.content}" if chap.title else chap.content
+            all_chunks.extend(chunker.chunk_text(chap_text, chapter_index=chap_idx))
+        detector.attribute_chunks(all_chunks)
+        voice_map = SceneAwareVoiceCaster.cast_characters(detector.characters, engine_type=parsed.backend, primary_narrator_voice=parsed.voice)
+
+        print("\n[CAST ALLOCATION]")
+        print(f"  ▸ Narrator: {voice_map.get('Narrator', parsed.voice)}")
+        for char_name, profile in detector.characters.items():
+            assigned = voice_map.get(char_name, "Default")
+            print(f"  ▸ Character: {char_name:20s} | Gender: {profile.gender:7s} | Lines: {profile.line_count:3d} | Voice: {assigned}")
         return 0
 
     def _progress_cb(curr, total, sample):
@@ -106,6 +143,12 @@ def main(args=None):
     if res.player_path:
         print(f"  ▸ HTML5 Player:   {res.player_path}")
     print(f"  ▸ Render Time:    {res.render_time_seconds:.2f}s")
+    if res.characters:
+        print("\n  [CAST ALLOCATION]")
+        print(f"    - Narrator: {res.voice_map.get('Narrator', parsed.voice)}")
+        for char_name, profile in res.characters.items():
+            assigned = res.voice_map.get(char_name, "Default")
+            print(f"    - {char_name:18s} ({profile.gender:7s}) : {assigned} ({profile.line_count} lines)")
     print("══════════════════════════════════════════════════════════════════════\n")
 
     return 0

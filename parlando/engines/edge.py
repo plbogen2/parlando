@@ -45,7 +45,7 @@ class EdgeTTSVoiceEngine(BaseVoiceEngine):
             AudioBuffer.create_silence(duration_ms=max(300, chunk.pause_after_ms)).to_wav_file(output_path)
             return output_path
 
-        voice = self.resolve_voice(chunk.character)
+        voice = self.resolve_voice(chunk.voice or chunk.character)
 
         rate_str = chunk.ssml_rate or "+0%"
         pitch_str = chunk.ssml_pitch or "+0Hz"

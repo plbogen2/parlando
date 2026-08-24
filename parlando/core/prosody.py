@@ -82,7 +82,7 @@ class ProsodyDirector:
         """Applies prosody markup, normalized text, voice assignment, and SSML rate/pitch to chunk."""
         markup = self.process_chunk(chunk, dialogue_voice_override=dialogue_voice_override)
         chunk.text = markup.clean_text
-        chunk.character = markup.voice_name
+        chunk.voice = markup.voice_name
         chunk.ssml_rate = markup.ssml_rate
         chunk.ssml_pitch = markup.ssml_pitch
         chunk.pause_before_ms = markup.pause_before_ms

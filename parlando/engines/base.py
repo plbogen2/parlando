@@ -2,6 +2,7 @@
 
 import abc
 import concurrent.futures
+import hashlib
 import os
 from typing import List, Optional
 
@@ -33,12 +34,11 @@ class BaseVoiceEngine(abc.ABC):
         os.makedirs(output_dir, exist_ok=True)
         results = [None] * len(chunks)
 
-        import hashlib
-
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {}
             for idx, chunk in enumerate(chunks):
-                content_key = f"{chunk.character}:{chunk.text}:{chunk.ssml_rate}:{chunk.ssml_pitch}:{self.__class__.__name__}"
+                voice_key = chunk.voice or chunk.character
+                content_key = f"{voice_key}:{chunk.text}:{chunk.ssml_rate}:{chunk.ssml_pitch}:{self.__class__.__name__}"
                 content_hash = hashlib.sha256(content_key.encode("utf-8")).hexdigest()[:16]
                 chunk_path = os.path.join(output_dir, f"chunk_{idx:05d}_{content_hash}.wav")
 

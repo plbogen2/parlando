@@ -70,7 +70,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         if not api_key:
             raise VoiceEngineError("GEMINI_API_KEY is not configured for Gemini voice synthesis.")
 
-        voice = self.resolve_voice(chunk.character)
+        voice = self.resolve_voice(chunk.voice or chunk.character)
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={api_key}"
 
         payload = {
