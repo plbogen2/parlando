@@ -217,6 +217,42 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
             pacing = PacingMode(data.get("pacing", "normal"))
             speed = float(data.get("speed", 1.0))
 
+            # Fast-path for single-chunk narration (< 1500 chars, no chapter headings)
+            if len(text) < 1500 and not text.startswith("#"):
+                engine = get_voice_engine(backend, default_voice=voice, api_key=api_key)
+                chunk = NarrativeChunk(
+                    text=text,
+                    chunk_type=ChunkType.NARRATION,
+                    character=voice,
+                    chunk_index=0,
+                )
+                pacing_cfg = PACING_PRESETS.get(pacing, PacingConfig())
+                pacing_cfg.speed_multiplier = speed
+                director = ProsodyDirector(pacing=pacing_cfg)
+                markup = director.process_chunk(chunk)
+                chunk.text = markup.clean_text
+                chunk.character = markup.voice_name
+                setattr(chunk, "ssml_rate", markup.ssml_rate)
+                setattr(chunk, "ssml_pitch", markup.ssml_pitch)
+
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+                    out_wav = tf.name
+
+                engine.synthesize_chunk(chunk, out_wav)
+
+                with open(out_wav, "rb") as f:
+                    wav_b64 = base64.b64encode(f.read()).decode("utf-8")
+                if os.path.exists(out_wav):
+                    os.remove(out_wav)
+
+                self._send_json(200, {
+                    "audio_base64": f"data:audio/wav;base64,{wav_b64}",
+                    "text_sample": text[:200],
+                    "voice": voice,
+                    "backend": backend,
+                })
+                return
+
             config = PipelineConfig(
                 backend=backend,
                 voice=voice,
@@ -243,6 +279,7 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
                 "audio_base64": f"data:audio/wav;base64,{wav_b64}",
                 "text_sample": text[:200],
                 "voice": voice,
+                "backend": backend,
             })
         except Exception as e:
             self._send_json(500, {"error": str(e)})

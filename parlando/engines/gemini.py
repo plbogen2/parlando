@@ -41,7 +41,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
     ):
         self.default_voice = default_voice
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
-        self.model = model
+        self.model = model or "gemini-2.5-flash-preview-tts"
         self.max_retries = max_retries
 
     def resolve_voice(self, voice_name: Optional[str]) -> str:
@@ -67,10 +67,9 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         payload = {
             "contents": [
                 {
-                    "role": "user",
                     "parts": [
                         {
-                            "text": f"Read the following text aloud clearly with high quality audio narration. Do not add any extra commentary, greetings, or conversational prefix:\n\n{text}"
+                            "text": text
                         }
                     ],
                 }
@@ -111,10 +110,10 @@ class GeminiVoiceEngine(BaseVoiceEngine):
                 if not audio_inline or "data" not in audio_inline:
                     raise VoiceEngineError(f"No inline audio data found in Gemini response: {parts}")
 
-                mime_type = audio_inline.get("mimeType", "")
+                mime_type = audio_inline.get("mimeType", "").lower()
                 raw_bytes = base64.b64decode(audio_inline["data"])
 
-                if "pcm" in mime_type.lower() or mime_type == "audio/pcm":
+                if "pcm" in mime_type or "l16" in mime_type:
                     # Write 24000Hz 16-bit PCM mono to WAV
                     with wave.open(output_path, "wb") as wf:
                         wf.setnchannels(1)
@@ -122,7 +121,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
                         wf.setframerate(24000)
                         wf.writeframes(raw_bytes)
                     return output_path
-                elif "wav" in mime_type.lower():
+                elif "wav" in mime_type:
                     with open(output_path, "wb") as f:
                         f.write(raw_bytes)
                     return output_path
@@ -138,6 +137,11 @@ class GeminiVoiceEngine(BaseVoiceEngine):
 
             except Exception as e:
                 last_error = e
+                # If model not found, try fallback TTS model
+                if "404" in str(e) and self.model == "gemini-2.5-flash-preview-tts":
+                    self.model = "gemini-3.1-flash-tts-preview"
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={api_key}"
+                time.sleep(0.5 * (2 ** attempt) + random.uniform(0.1, 0.3))
                 time.sleep(0.5 * (2 ** attempt) + random.uniform(0.1, 0.3))
 
         raise VoiceEngineError(f"Gemini TTS synthesis failed after {self.max_retries} attempts: {last_error}")
