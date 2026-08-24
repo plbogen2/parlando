@@ -15,10 +15,13 @@ import uuid
 from parlando.config import (
     AudioFormat,
     PACING_PRESETS,
+    PacingConfig,
     PacingMode,
     VALID_NEURAL_VOICES,
     VOICE_PROFILES,
 )
+from parlando.core import ChunkType, NarrativeChunk, ProsodyDirector
+from parlando.engines import get_voice_engine
 from parlando.parsers import DocumentParser, ParsedDocument
 from parlando.pipeline import AudiobookPipeline, PipelineConfig
 

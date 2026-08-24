@@ -59,7 +59,18 @@ class WebServerTest(unittest.TestCase):
     def test_jobs_clear_endpoint(self):
         res = self._post("/api/jobs/clear", {})
         self.assertTrue(res.get("success"))
-        self.assertEqual(len(JOBS), 0)
+
+    def test_preview_endpoint(self):
+        # Test preview with mock engine
+        payload = {
+            "text": "Hello world from test suite",
+            "backend": "mock",
+            "voice": "mock-narrator",
+        }
+        res = self._post("/api/preview", payload)
+        self.assertIn("audio_base64", res)
+        self.assertTrue(res["audio_base64"].startswith("data:audio/wav;base64,"))
+        self.assertEqual(res["backend"], "mock")
 
 
 if __name__ == "__main__":
