@@ -38,6 +38,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         api_key: Optional[str] = None,
         model: str = "gemini-2.5-flash-preview-tts",
         max_retries: int = 4,
+        **kwargs,
     ):
         self.default_voice = default_voice
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")

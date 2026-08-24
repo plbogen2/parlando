@@ -12,7 +12,7 @@ from .base import BaseVoiceEngine, VoiceEngineError
 class OpenAIVoiceEngine(BaseVoiceEngine):
     """OpenAI TTS voice engine (requires OPENAI_API_KEY)."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "tts-1-hd", default_voice: str = "onyx"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "tts-1-hd", default_voice: str = "onyx", **kwargs):
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         self.model = model
         self.default_voice = default_voice

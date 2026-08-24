@@ -25,7 +25,7 @@ class EdgeTTSVoiceEngine(BaseVoiceEngine):
         "Zephyr": "en-US-RogerNeural",
     }
 
-    def __init__(self, default_voice: str = "en-US-ChristopherNeural", max_retries: int = 4):
+    def __init__(self, default_voice: str = "en-US-ChristopherNeural", max_retries: int = 4, **kwargs):
         self.default_voice = default_voice
         self.max_retries = max_retries
 
