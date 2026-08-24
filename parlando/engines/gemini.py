@@ -36,7 +36,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         self,
         default_voice: str = "Fenrir",
         api_key: Optional[str] = None,
-        model: str = "gemini-2.0-flash",
+        model: str = "gemini-2.5-flash-preview-tts",
         max_retries: int = 4,
     ):
         self.default_voice = default_voice
