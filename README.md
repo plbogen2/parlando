@@ -59,25 +59,24 @@ Parlando operates as a standalone CLI tool, a containerized REST microservice, a
 
 Experience Parlando's neural prosody, multi-character dialogue isolation, and zero-crossing DSP in action synthesizing William Gibson's *Chiba City Blues* (*Neuromancer* Chapters 1 & 2):
 
-https://github.com/user-attachments/assets/ or direct link:
-
 <audio controls src="https://github.com/plbogen2/parlando/raw/main/samples/chiba_city_blues.mp3">
-  <a href="https://github.com/plbogen2/parlando/raw/main/samples/chiba_city_blues.mp3">▶ <b>Play / Download MP3 (1.48 min)</b></a>
+  <a href="https://github.com/plbogen2/parlando/raw/main/samples/chiba_city_blues.mp3">▶ <b>Play / Download MP3 (2.10 min)</b></a>
 </audio>
 
-* 🔊 **Direct Audio Stream**: [**Play `chiba_city_blues.mp3` (1.48 min)**](https://github.com/plbogen2/parlando/raw/main/samples/chiba_city_blues.mp3) *(19 narrative chunks, dual-voice dialogue attribution: `ChristopherNeural` narrator + `GuyNeural` Case)*
-* 🌐 **Interactive Web Player**: [**Launch Web Player Online**](https://htmlpreview.github.io/?https://github.com/plbogen2/parlando/blob/main/samples/chiba_city_blues_player.html) or open [`samples/chiba_city_blues_player.html`](samples/chiba_city_blues_player.html) *(Features chapter scrubbing, speed controls, and real-time Web Audio FFT frequency visualizer)*
+* 🔊 **Direct Audio Stream**: [**Play `chiba_city_blues.mp3` (2.10 min)**](https://github.com/plbogen2/parlando/raw/main/samples/chiba_city_blues.mp3) *(19 narrative chunks, multi-speaker Gemini neural audio attribution: `Fenrir` Narrator + `Puck` Case + `Aoede` Linda Lee + `Charon` Hotel Clerk)*
+* 🌐 **Interactive Web Player**: [**Launch Web Player Online**](https://htmlpreview.github.io/?https://github.com/plbogen2/parlando/blob/main/samples/chiba_city_blues_player.html) or open [`samples/chiba_city_blues_player.html`](samples/chiba_city_blues_player.html) *(Features chapter scrubbing, speed controls, and real-time spectrum visualizer with 100% self-contained embedded audio)*
 * 📄 **Source Manuscript**: [`samples/neuromancer_sample.md`](samples/neuromancer_sample.md)
 
-#### Synthesized using:
+#### Synthesized using Google Gemini Studio Voice:
 ```bash
 parlando samples/neuromancer_sample.md \
   -o samples/chiba_city_blues.mp3 \
   --format mp3 \
-  --voice en-US-ChristopherNeural \
-  --dialogue-voice en-US-GuyNeural \
+  --engine gemini \
+  --voice Fenrir \
   --pacing dramatic
 ```
+*(With character voice attributions: `Case` -> `Puck`, `Linda Lee` -> `Aoede`, `Hotel Clerk` -> `Charon`)*
 
 ---
 
