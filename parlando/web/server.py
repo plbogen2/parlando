@@ -209,8 +209,11 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "No text provided for synthesis"})
                 return
 
-            backend = data.get("backend", "edge")
-            voice = data.get("voice", "en-US-ChristopherNeural")
+            api_key = data.get("api_key") or data.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+            backend = data.get("backend")
+            if not backend:
+                backend = "gemini" if api_key else "edge"
+            voice = data.get("voice") or ("Fenrir" if backend == "gemini" else "en-US-ChristopherNeural")
             pacing = PacingMode(data.get("pacing", "normal"))
             speed = float(data.get("speed", 1.0))
 
@@ -221,6 +224,7 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
                 speed=speed,
                 audio_format=AudioFormat.WAV,
                 audition=False,
+                api_key=api_key,
                 generate_player=False,
             )
             pipeline = AudiobookPipeline(config)
@@ -282,8 +286,11 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
             job["total_chapters"] = doc.total_chapters
             job["chapters"] = [{"title": c.title, "words": c.word_count, "index": c.chapter_index} for c in doc.chapters]
 
-            backend = data.get("backend", "edge")
-            voice = data.get("voice", "en-US-ChristopherNeural")
+            api_key = data.get("api_key") or data.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+            backend = data.get("backend")
+            if not backend:
+                backend = "gemini" if api_key else "edge"
+            voice = data.get("voice") or ("Fenrir" if backend == "gemini" else "en-US-ChristopherNeural")
             dialogue_voice = data.get("dialogue_voice")
             pacing = PacingMode(data.get("pacing", "normal"))
             speed = float(data.get("speed", 1.0))
@@ -297,6 +304,7 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
                 pacing_mode=pacing,
                 speed=speed,
                 audio_format=audio_format,
+                api_key=api_key,
                 audition=data.get("audition", False),
             )
             pipeline = AudiobookPipeline(config)

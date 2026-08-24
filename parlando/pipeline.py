@@ -40,6 +40,7 @@ class PipelineConfig:
     audition: bool = False
     max_workers: int = 4
     cache_dir: Optional[str] = None
+    api_key: Optional[str] = None
     generate_player: bool = True
     normalize_loudness: bool = True
 
@@ -110,7 +111,11 @@ class AudiobookPipeline:
 
         # 4. Neural Voice Synthesis
         cache_dir = self.config.cache_dir or os.path.join(tempfile.gettempdir(), ".parlando_chunk_cache")
-        engine = get_voice_engine(self.config.backend, default_voice=self.config.voice)
+        engine = get_voice_engine(
+            self.config.backend,
+            default_voice=self.config.voice,
+            api_key=self.config.api_key,
+        )
 
         def _on_chunk_progress(idx, total, chunk):
             if progress_callback:
