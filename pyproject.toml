@@ -41,6 +41,8 @@ classifiers = [
 ]
 dependencies = [
     "beautifulsoup4>=4.11.0",
+    "mutagen>=1.46.0",
+    "edge-tts>=6.1.0",
 ]
 
 [tool.setuptools.packages.find]

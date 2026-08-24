@@ -199,18 +199,28 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
 
     def _handle_preview(self, data: Dict):
         try:
-            doc = self._parse_payload_doc(data)
-            audition_doc = doc.get_audition_excerpt(max_words=150)
-            text_sample = audition_doc.chapters[0].content[:200]
+            text = (data.get("text") or "").strip()
+            if not text and (data.get("url") or data.get("file_path") or data.get("file_content_b64")):
+                doc = self._parse_payload_doc(data)
+                audition_doc = doc.get_audition_excerpt(max_words=150)
+                text = audition_doc.chapters[0].content
+
+            if not text:
+                self._send_json(400, {"error": "No text provided for synthesis"})
+                return
 
             backend = data.get("backend", "edge")
             voice = data.get("voice", "en-US-ChristopherNeural")
+            pacing = PacingMode(data.get("pacing", "normal"))
+            speed = float(data.get("speed", 1.0))
 
             config = PipelineConfig(
                 backend=backend,
                 voice=voice,
+                pacing_mode=pacing,
+                speed=speed,
                 audio_format=AudioFormat.WAV,
-                audition=True,
+                audition=False,
                 generate_player=False,
             )
             pipeline = AudiobookPipeline(config)
@@ -218,15 +228,16 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
                 out_wav = tf.name
 
-            pipeline.run(text_sample, output_path=out_wav)
+            pipeline.run(text, output_path=out_wav)
 
             with open(out_wav, "rb") as f:
                 wav_b64 = base64.b64encode(f.read()).decode("utf-8")
-            os.remove(out_wav)
+            if os.path.exists(out_wav):
+                os.remove(out_wav)
 
             self._send_json(200, {
                 "audio_base64": f"data:audio/wav;base64,{wav_b64}",
-                "text_sample": text_sample,
+                "text_sample": text[:200],
                 "voice": voice,
             })
         except Exception as e:
