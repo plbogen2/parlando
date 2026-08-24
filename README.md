@@ -55,6 +55,26 @@ Parlando operates as a standalone CLI tool, a containerized REST microservice, a
 
 ---
 
+## 🎧 Real Generated Audio Sample
+
+Listen to Parlando's neural prosody, dialogue isolation, and zero-crossing DSP in action synthesizing William Gibson's *Chiba City Blues* (Chapters 1 & 2):
+
+* 🔊 **Audio Master (MP3)**: [`samples/chiba_city_blues.mp3`](samples/chiba_city_blues.mp3) *(1.48 minutes, 19 narrative chunks, dual-voice dialogue attribution)*
+* 🌐 **Standalone Interactive Web Player**: [`samples/chiba_city_blues_player.html`](samples/chiba_city_blues_player.html) *(Single-file zero-dependency HTML5 player with chapter scrubbing, speed multiplier, and real-time Web Audio FFT visualizer)*
+* 📄 **Source Manuscript**: [`samples/neuromancer_sample.md`](samples/neuromancer_sample.md)
+
+#### Command Used:
+```bash
+parlando samples/neuromancer_sample.md \
+  -o samples/chiba_city_blues.mp3 \
+  --format mp3 \
+  --voice en-US-ChristopherNeural \
+  --dialogue-voice en-US-GuyNeural \
+  --pacing dramatic
+```
+
+---
+
 ## 🚀 Key Features
 
 ### 1. Narrative-Aware Prose Chunking & Dialogue Isolation
