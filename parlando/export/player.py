@@ -42,6 +42,7 @@ class HTMLPlayerGenerator:
       padding: 0;
     }}
     body {{
+      background: #020617;
       background: radial-gradient(circle at 50% 0%, #0f172a 0%, #020617 100%);
       color: #f1f5f9;
       min-height: 100vh;
@@ -54,17 +55,12 @@ class HTMLPlayerGenerator:
     .player-card {{
       max-width: 42rem;
       width: 100%;
+      background: #0f172a;
       background: rgba(15, 23, 42, 0.94);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
       border: 1px solid #1e293b;
       border-radius: 1.25rem;
       padding: 1.75rem;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(6, 182, 212, 0.15);
-      transition: box-shadow 0.3s ease;
-    }}
-    .player-card:hover {{
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 40px rgba(6, 182, 212, 0.25);
     }}
     .header {{
       text-align: center;
@@ -75,8 +71,8 @@ class HTMLPlayerGenerator:
       align-items: center;
       gap: 0.5rem;
       padding: 0.25rem 0.75rem;
-      background: rgba(8, 47, 73, 0.8);
-      border: 1px solid rgba(6, 182, 212, 0.3);
+      background: #082f49;
+      border: 1px solid rgba(6, 182, 212, 0.4);
       border-radius: 9999px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 0.75rem;
@@ -90,7 +86,8 @@ class HTMLPlayerGenerator:
       border-radius: 9999px;
       background-color: #22d3ee;
       box-shadow: 0 0 8px #22d3ee;
-      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      display: inline-block;
+      animation: pulse 2s infinite;
     }}
     @keyframes pulse {{
       0%, 100% {{ opacity: 1; transform: scale(1); }}
@@ -111,8 +108,8 @@ class HTMLPlayerGenerator:
     }}
     .visualizer-container {{
       position: relative;
-      background: rgba(2, 6, 23, 0.9);
-      border: 1px solid rgba(30, 41, 59, 0.8);
+      background: #020617;
+      border: 1px solid #1e293b;
       border-radius: 0.875rem;
       padding: 0.75rem;
       margin-bottom: 1.5rem;
@@ -155,10 +152,6 @@ class HTMLPlayerGenerator:
       background: #22d3ee;
       box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
       cursor: pointer;
-      transition: transform 0.15s ease;
-    }}
-    input[type=range]::-webkit-slider-thumb:hover {{
-      transform: scale(1.2);
     }}
     input[type=range]::-moz-range-thumb {{
       width: 1.1rem;
@@ -178,7 +171,7 @@ class HTMLPlayerGenerator:
     }}
     .btn-icon {{
       padding: 0.65rem 0.9rem;
-      background: rgba(30, 41, 59, 0.8);
+      background: #1e293b;
       border: 1px solid #334155;
       color: #cbd5e1;
       border-radius: 0.75rem;
@@ -190,10 +183,10 @@ class HTMLPlayerGenerator:
     .btn-icon:hover {{
       background: #334155;
       color: #fff;
-      border-color: #475569;
     }}
     .btn-play {{
       padding: 0.75rem 1.75rem;
+      background: #06b6d4;
       background: linear-gradient(135deg, #06b6d4 0%, #2563eb 100%);
       color: #020617;
       border: none;
@@ -210,7 +203,6 @@ class HTMLPlayerGenerator:
     .btn-play:hover {{
       background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%);
       box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5);
-      transform: translateY(-1px);
     }}
     .btn-play svg {{
       width: 1.25rem;
@@ -227,13 +219,9 @@ class HTMLPlayerGenerator:
       padding: 0.65rem 0.75rem;
       outline: none;
       cursor: pointer;
-      transition: all 0.2s ease;
-    }}
-    .speed-select:hover {{
-      border-color: #475569;
     }}
     .chapters-section {{
-      border-top: 1px solid rgba(30, 41, 59, 0.8);
+      border-top: 1px solid #1e293b;
       padding-top: 1.25rem;
     }}
     .chapters-header {{
@@ -250,17 +238,6 @@ class HTMLPlayerGenerator:
       gap: 0.45rem;
       max-height: 13rem;
       overflow-y: auto;
-      padding-right: 0.25rem;
-    }}
-    .chapters-list::-webkit-scrollbar {{
-      width: 5px;
-    }}
-    .chapters-list::-webkit-scrollbar-track {{
-      background: transparent;
-    }}
-    .chapters-list::-webkit-scrollbar-thumb {{
-      background: #334155;
-      border-radius: 4px;
     }}
     .chapter-item {{
       display: flex;
@@ -268,21 +245,20 @@ class HTMLPlayerGenerator:
       justify-content: space-between;
       padding: 0.6rem 0.85rem;
       border-radius: 0.6rem;
-      background: rgba(30, 41, 59, 0.45);
-      border: 1px solid rgba(30, 41, 59, 0.6);
+      background: #1e293b;
+      border: 1px solid #334155;
       color: #e2e8f0;
       font-size: 0.85rem;
       cursor: pointer;
       transition: all 0.2s ease;
     }}
     .chapter-item:hover {{
-      background: rgba(30, 41, 59, 0.85);
-      border-color: #475569;
+      background: #334155;
       color: #fff;
     }}
     .chapter-item.active {{
-      background: rgba(8, 47, 73, 0.6);
-      border-color: rgba(6, 182, 212, 0.6);
+      background: #082f49;
+      border-color: #06b6d4;
     }}
     .chapter-item.active .chap-title {{
       color: #22d3ee;
@@ -295,8 +271,8 @@ class HTMLPlayerGenerator:
     }}
   </style>
 </head>
-<body>
-  <div class="player-card">
+<body style="background: #020617; color: #f1f5f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem;">
+  <div class="player-card" style="max-width: 42rem; width: 100%; background: #0f172a; border: 1px solid #1e293b; border-radius: 1.25rem; padding: 1.75rem;">
     
     <div class="header">
       <div class="badge">
@@ -312,7 +288,11 @@ class HTMLPlayerGenerator:
       <canvas id="visualizer"></canvas>
     </div>
 
-    <audio id="audio" src="{audio_filename}" preload="metadata"></audio>
+    <audio id="audio" preload="auto">
+      <source src="{audio_filename}" type="audio/mp3">
+      <source src="https://raw.githubusercontent.com/plbogen2/parlando/main/samples/{audio_filename}" type="audio/mp3">
+      <source src="https://github.com/plbogen2/parlando/raw/main/samples/{audio_filename}" type="audio/mp3">
+    </audio>
 
     <!-- Progress Scrubber -->
     <div class="slider-wrapper">
@@ -364,23 +344,24 @@ class HTMLPlayerGenerator:
     const canvas = document.getElementById('visualizer');
     const ctx = canvas.getContext('2d');
 
-    let audioCtx, analyser, source, isInit = false;
+    let audioCtx = null, analyser = null, isInit = false;
+    let animPhase = 0;
 
-    function initAudio() {{
-      if (isInit) return;
-      try {{
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.8;
-        source = audioCtx.createMediaElementSource(audio);
-        source.connect(analyser);
-        analyser.connect(audioCtx.destination);
-        isInit = true;
-      }} catch (e) {{
-        console.warn("AudioContext setup failed:", e);
+    // Fallback URL if local file load fails
+    const fallbackUrl = 'https://raw.githubusercontent.com/plbogen2/parlando/main/samples/{audio_filename}';
+    let triedFallback = false;
+
+    audio.addEventListener('error', () => {{
+      if (!triedFallback) {{
+        triedFallback = true;
+        console.warn('Relative audio path failed, switching to remote GitHub raw audio stream...');
+        audio.src = fallbackUrl;
+        audio.load();
+        if (playText.textContent === 'Pause') {{
+          audio.play().catch(e => console.warn('Autoplay error:', e));
+        }}
       }}
-    }}
+    }});
 
     function resizeCanvas() {{
       canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
@@ -399,15 +380,16 @@ class HTMLPlayerGenerator:
       const numBars = 36;
       const barWidth = (w / numBars) - 2;
 
-      let freqData = new Uint8Array(32);
-      if (analyser && !audio.paused) {{
-        analyser.getByteFrequencyData(freqData);
-      }}
+      animPhase += 0.05;
 
       for (let i = 0; i < numBars; i++) {{
-        const fIdx = Math.floor((i / numBars) * freqData.length);
-        const val = freqData[fIdx] || 0;
-        const barHeight = audio.paused ? 4 : Math.max(4, (val / 255) * h * 0.9);
+        let barHeight = 4;
+        if (!audio.paused) {{
+          const wave1 = Math.sin(animPhase + (i * 0.35)) * 0.5 + 0.5;
+          const wave2 = Math.cos(animPhase * 0.8 + (i * 0.2)) * 0.5 + 0.5;
+          const combined = (wave1 * 0.6 + wave2 * 0.4);
+          barHeight = Math.max(6, combined * (h - 12));
+        }}
         const x = i * (barWidth + 2);
         const y = (h - barHeight) / 2;
 
@@ -421,6 +403,7 @@ class HTMLPlayerGenerator:
     drawVisualizer();
 
     function fmt(s) {{
+      if (isNaN(s) || s < 0) return '00:00';
       const m = Math.floor(s / 60);
       const sec = Math.floor(s % 60);
       return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
@@ -464,12 +447,24 @@ class HTMLPlayerGenerator:
     }}
 
     function togglePlay() {{
-      initAudio();
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
       if (audio.paused) {{
-        audio.play();
-        playText.textContent = 'Pause';
-        playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {{
+          playPromise.then(() => {{
+            playText.textContent = 'Pause';
+            playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+          }}).catch(err => {{
+            console.warn('Playback error, trying remote stream:', err);
+            if (!triedFallback) {{
+              triedFallback = true;
+              audio.src = fallbackUrl;
+              audio.play().then(() => {{
+                playText.textContent = 'Pause';
+                playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+              }}).catch(e => console.error('Final playback failure:', e));
+            }}
+          }});
+        }}
       }} else {{
         audio.pause();
         playText.textContent = 'Play';
@@ -480,11 +475,17 @@ class HTMLPlayerGenerator:
     playBtn.onclick = togglePlay;
 
     audio.ontimeupdate = () => {{
-      if (!isNaN(audio.duration)) {{
+      if (!isNaN(audio.duration) && audio.duration > 0) {{
         seek.value = (audio.currentTime / audio.duration) * 100;
         curTime.textContent = fmt(audio.currentTime);
         durTime.textContent = fmt(audio.duration);
         updateActiveChapter();
+      }}
+    }};
+
+    audio.onloadedmetadata = () => {{
+      if (!isNaN(audio.duration)) {{
+        durTime.textContent = fmt(audio.duration);
       }}
     }};
 
@@ -495,7 +496,7 @@ class HTMLPlayerGenerator:
     }};
 
     skipBack.onclick = () => {{ audio.currentTime = Math.max(0, audio.currentTime - 15); }};
-    skipFwd.onclick = () => {{ audio.currentTime = Math.min(audio.duration, audio.currentTime + 15); }};
+    skipFwd.onclick = () => {{ audio.currentTime = Math.min(audio.duration || 9999, audio.currentTime + 15); }};
     speedSel.onchange = () => {{ audio.playbackRate = parseFloat(speedSel.value); }};
   </script>
 </body>
