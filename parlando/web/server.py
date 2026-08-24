@@ -21,8 +21,21 @@ from parlando.config import (
     VOICE_PROFILES,
     VoiceProfile,
 )
-from parlando.core import ChunkType, NarrativeChunk, ProsodyDirector
+from parlando.core import (
+    AudioBuffer,
+    AudioStitcher,
+    ChapterTimepoint,
+    CharacterProfile,
+    ChunkType,
+    GenericSpeakerDetector,
+    NarrativeChunk,
+    NarrativeChunker,
+    ProsodyDirector,
+    SceneAwareVoiceCaster,
+    normalize_character_input,
+)
 from parlando.engines import get_voice_engine
+from parlando.export import AudioExporter, HTMLPlayerGenerator
 from parlando.parsers import DocumentParser, ParsedDocument
 from parlando.pipeline import AudiobookPipeline, PipelineConfig
 
@@ -244,6 +257,7 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self._send_json(400, {"error": str(e)})
 
+
     def _handle_preview(self, data: Dict):
         try:
             text = (data.get("text") or "").strip()
@@ -262,25 +276,28 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
                 backend = "gemini" if api_key else "edge"
             voice = data.get("voice") or ("Fenrir" if backend == "gemini" else "en-US-ChristopherNeural")
             model = data.get("model")
+            dialogue_voice = data.get("dialogue_voice")
+            cast_spec = data.get("characters") or data.get("cast")
             pacing = PacingMode(data.get("pacing", "normal"))
             speed = float(data.get("speed", 1.0))
 
-            # Fast-path for single-chunk narration (< 1500 chars, no chapter headings)
-            if len(text) < 1500 and not text.startswith("#"):
+            # Narrative chunking & dialogue isolation
+            chunker = NarrativeChunker()
+            chunks = chunker.chunk_text(text)
+            has_dialogue = any(c.chunk_type == ChunkType.DIALOGUE for c in chunks)
+
+            # Fast-path for pure single narration chunk (< 1500 chars, no dialogue)
+            if len(chunks) == 1 and not has_dialogue and not text.startswith("#"):
                 engine = get_voice_engine(backend, default_voice=voice, api_key=api_key, model=model)
-                chunk = NarrativeChunk(
-                    text=text,
-                    chunk_type=ChunkType.NARRATION,
-                    character=voice,
-                    chunk_index=0,
-                )
+                chunk = chunks[0]
+                chunk.character = voice
                 pacing_cfg = PACING_PRESETS.get(pacing, PacingConfig())
                 pacing_cfg.speed_multiplier = speed
                 director = ProsodyDirector(
                     voice_profile=VoiceProfile(name="custom", primary_voice=voice),
                     pacing=pacing_cfg,
                 )
-                director.apply_to_chunk(chunk)
+                director.apply_to_chunk(chunk, dialogue_voice_override=voice)
 
                 with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
                     out_wav = tf.name
@@ -298,38 +315,62 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
                     "text_sample": text[:200],
                     "voice": voice,
                     "backend": backend,
+                    "chunks": 1,
                 })
                 return
 
-            config = PipelineConfig(
-                backend=backend,
-                voice=voice,
-                pacing_mode=pacing,
-                speed=speed,
-                audio_format=AudioFormat.WAV,
-                audition=False,
-                api_key=api_key,
-                model=model,
-                generate_player=False,
+            # Multi-chunk or dialogue present: perform speaker detection & character casting
+            detector = GenericSpeakerDetector(predefined_characters=cast_spec)
+            chunks = detector.attribute_chunks(chunks)
+            voice_map = SceneAwareVoiceCaster.cast_characters(
+                detector.characters,
+                engine_type=backend,
+                primary_narrator_voice=voice,
             )
-            pipeline = AudiobookPipeline(config)
 
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
-                out_wav = tf.name
+            pacing_cfg = PACING_PRESETS.get(pacing, PacingConfig())
+            pacing_cfg.speed_multiplier = speed
+            director = ProsodyDirector(
+                voice_profile=VoiceProfile(name="custom", primary_voice=voice),
+                pacing=pacing_cfg,
+            )
 
+            for c in chunks:
+                if c.chunk_type == ChunkType.DIALOGUE:
+                    assigned_v = dialogue_voice or voice_map.get(c.character) or voice
+                    director.apply_to_chunk(c, dialogue_voice_override=assigned_v)
+                else:
+                    director.apply_to_chunk(c, dialogue_voice_override=voice)
+
+            engine = get_voice_engine(backend, default_voice=voice, api_key=api_key, model=model)
+            temp_dir = tempfile.mkdtemp(prefix="parlando_preview_")
             try:
-                pipeline.run(text, output_path=out_wav)
-                with open(out_wav, "rb") as f:
-                    wav_b64 = base64.b64encode(f.read()).decode("utf-8")
+                audio_paths = engine.synthesize_batch(chunks, output_dir=temp_dir, max_workers=4)
+                stitcher = AudioStitcher(crossfade_ms=35)
+                stitched = stitcher.assemble_chunks(chunks, audio_paths)
+                wav_bytes = stitched.master_buffer.to_wav_bytes()
+                wav_b64 = base64.b64encode(wav_bytes).decode("utf-8")
             finally:
-                if os.path.exists(out_wav):
-                    os.remove(out_wav)
+                shutil.rmtree(temp_dir, ignore_errors=True)
 
             self._send_json(200, {
                 "audio_base64": f"data:audio/wav;base64,{wav_b64}",
                 "text_sample": text[:200],
                 "voice": voice,
                 "backend": backend,
+                "characters": {
+                    k: {
+                        "name": v.name,
+                        "gender": v.gender,
+                        "line_count": v.line_count,
+                        "assigned_voice": v.assigned_voice,
+                        "interacts_with": sorted(list(v.interacts_with)) if v.interacts_with else [],
+                        "aliases": sorted(list(v.aliases)) if v.aliases else [],
+                    }
+                    for k, v in detector.characters.items()
+                },
+                "voice_map": voice_map,
+                "chunks": len(chunks),
             })
         except Exception as e:
             self._send_json(500, {"error": str(e)})

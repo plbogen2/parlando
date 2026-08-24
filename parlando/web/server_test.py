@@ -72,6 +72,24 @@ class WebServerTest(unittest.TestCase):
         self.assertTrue(res["audio_base64"].startswith("data:audio/wav;base64,"))
         self.assertEqual(res["backend"], "mock")
 
+    def test_preview_endpoint_with_dialogue(self):
+        # Test preview with dialogue chunking and character attribution
+        payload = {
+            "text": '"We need to go now," Case whispered. Linda nodded silently.',
+            "backend": "mock",
+            "voice": "mock-narrator",
+            "characters": {
+                "Case": {"gender": "male", "voice": "mock-case"}
+            }
+        }
+        res = self._post("/api/preview", payload)
+        self.assertIn("audio_base64", res)
+        self.assertTrue(res["audio_base64"].startswith("data:audio/wav;base64,"))
+        self.assertIn("characters", res)
+        self.assertIn("voice_map", res)
+        self.assertIn("Case", res["characters"])
+        self.assertEqual(res["voice_map"].get("Case"), "mock-case")
+
     def test_job_manager(self):
         from parlando.web.server import JobManager
         import tempfile
