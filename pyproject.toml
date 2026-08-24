@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Neural prose and audiobook voice synthesis pipeline with intelligent prosody, semantic chunking, zero-crossing audio stitching, and Web Audio studio."
 readme = "README.md"
 authors = [
-    { name = "Paul L. Bogen", email = "plbogen@gmail.com" }
+    { name = "Dr. Paul Logasa Bogen II", email = "plbogen@gmail.com" }
 ]
 license = { text = "MIT" }
 requires-python = ">=3.9"
@@ -69,8 +69,8 @@ dev = [
 ]
 
 [project.scripts]
-parlando = "cli:main"
-synth-audiobook = "cli:main"
+parlando = "parlando.cli:main"
+synth-audiobook = "parlando.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/plbogen2/parlando"

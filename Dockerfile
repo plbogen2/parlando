@@ -11,7 +11,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+RUN pip install --no-cache-dir -e .
 
 EXPOSE 8765
 
-CMD ["python3", "synth_audiobook.py", "--web", "--port", "8765", "--host", "0.0.0.0"]
+CMD ["python3", "-m", "parlando.cli", "--web", "--port", "8765", "--host", "0.0.0.0"]
