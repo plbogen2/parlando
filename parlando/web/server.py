@@ -19,6 +19,7 @@ from parlando.config import (
     PacingMode,
     VALID_NEURAL_VOICES,
     VOICE_PROFILES,
+    VoiceProfile,
 )
 from parlando.core import ChunkType, NarrativeChunk, ProsodyDirector
 from parlando.engines import get_voice_engine
@@ -231,10 +232,13 @@ class AudiobookWebHandler(BaseHTTPRequestHandler):
                 )
                 pacing_cfg = PACING_PRESETS.get(pacing, PacingConfig())
                 pacing_cfg.speed_multiplier = speed
-                director = ProsodyDirector(pacing=pacing_cfg)
+                director = ProsodyDirector(
+                    voice_profile=VoiceProfile(name="custom", primary_voice=voice),
+                    pacing=pacing_cfg,
+                )
                 markup = director.process_chunk(chunk)
                 chunk.text = markup.clean_text
-                chunk.character = markup.voice_name
+                chunk.character = voice
                 setattr(chunk, "ssml_rate", markup.ssml_rate)
                 setattr(chunk, "ssml_pitch", markup.ssml_pitch)
 

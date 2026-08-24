@@ -101,4 +101,6 @@ class ProsodyDirector:
             if "male" in self.profile.secondary_voices and chunk.gender == "male":
                 return self.profile.secondary_voices["male"]
 
+        if chunk.character:
+            return chunk.character
         return self.profile.primary_voice

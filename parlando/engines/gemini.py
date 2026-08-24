@@ -93,7 +93,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         for attempt in range(self.max_retries):
             try:
                 req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
-                with urllib.request.urlopen(req, timeout=35) as resp:
+                with urllib.request.urlopen(req, timeout=15) as resp:
                     resp_data = json.loads(resp.read().decode("utf-8"))
 
                 candidates = resp_data.get("candidates") or []
@@ -141,7 +141,6 @@ class GeminiVoiceEngine(BaseVoiceEngine):
                 if "404" in str(e) and self.model == "gemini-2.5-flash-preview-tts":
                     self.model = "gemini-3.1-flash-tts-preview"
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={api_key}"
-                time.sleep(0.5 * (2 ** attempt) + random.uniform(0.1, 0.3))
-                time.sleep(0.5 * (2 ** attempt) + random.uniform(0.1, 0.3))
+                time.sleep(0.2 * (1.5 ** attempt) + random.uniform(0.05, 0.15))
 
         raise VoiceEngineError(f"Gemini TTS synthesis failed after {self.max_retries} attempts: {last_error}")
