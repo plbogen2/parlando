@@ -78,6 +78,17 @@ class ProsodyDirector:
             pause_after_ms=chunk.pause_after_ms,
         )
 
+    def apply_to_chunk(self, chunk: NarrativeChunk, dialogue_voice_override: Optional[str] = None) -> NarrativeChunk:
+        """Applies prosody markup, normalized text, voice assignment, and SSML rate/pitch to chunk."""
+        markup = self.process_chunk(chunk, dialogue_voice_override=dialogue_voice_override)
+        chunk.text = markup.clean_text
+        chunk.character = markup.voice_name
+        chunk.ssml_rate = markup.ssml_rate
+        chunk.ssml_pitch = markup.ssml_pitch
+        chunk.pause_before_ms = markup.pause_before_ms
+        chunk.pause_after_ms = markup.pause_after_ms
+        return chunk
+
     def normalize_text(self, text: str) -> str:
         s = text
         for pat, repl in self.EXPANSION_RULES:

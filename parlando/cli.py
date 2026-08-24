@@ -32,6 +32,7 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--speed", type=float, default=1.0, help="Global playback speed multiplier (default: 1.0)")
     parser.add_argument("--format", default="m4b", choices=["m4b", "mp3", "wav"], help="Audio container format (default: m4b)")
     parser.add_argument("--crossfade", type=int, default=35, help="Crossfade overlap in ms (default: 35)")
+    parser.add_argument("--model", help="Gemini neural model override (e.g. gemini-2.5-pro-preview-tts)")
     parser.add_argument("--audition", action="store_true", help="Audition mode: synthesize only the first section/excerpt")
     parser.add_argument("--dry-run", action="store_true", help="Inspect and segment manuscript without synthesizing audio")
     parser.add_argument("--no-player", action="store_true", help="Disable generation of standalone HTML5 audio player")
@@ -67,6 +68,7 @@ def main(args=None):
         audio_format=audio_format,
         crossfade_ms=parsed.crossfade,
         audition=parsed.audition,
+        model=parsed.model,
         generate_player=not parsed.no_player,
     )
 

@@ -11,13 +11,14 @@ import urllib.request
 import wave
 from typing import Optional
 
+from parlando.config import DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL
 from parlando.core.chunker import NarrativeChunk
 from parlando.core.dsp import AudioBuffer
 from .base import BaseVoiceEngine, VoiceEngineError
 
 
 class GeminiVoiceEngine(BaseVoiceEngine):
-    """Studio neural voice synthesis via Google Gemini 2.0 API."""
+    """Studio neural voice synthesis via Google Gemini Multimodal Audio API."""
 
     VOICE_MAP = {
         "en-US-ChristopherNeural": "Fenrir",
@@ -32,18 +33,25 @@ class GeminiVoiceEngine(BaseVoiceEngine):
 
     VALID_VOICES = {"Puck", "Charon", "Kore", "Fenrir", "Aoede", "Leda", "Oran", "Zephyr"}
 
+    DIRECTOR_INSTRUCTION = (
+        "You are a world-class audiobook narrator. Read the provided text aloud with "
+        "authentic emotional depth, natural pacing, clear dialogue distinction, and rich atmospheric nuance."
+    )
+
     def __init__(
         self,
         default_voice: str = "Fenrir",
         api_key: Optional[str] = None,
-        model: str = "gemini-2.5-flash-preview-tts",
+        model: Optional[str] = None,
         max_retries: int = 4,
+        director_instruction: Optional[str] = None,
         **kwargs,
     ):
         self.default_voice = default_voice
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
-        self.model = model or "gemini-2.5-flash-preview-tts"
+        self.model = model or DEFAULT_GEMINI_MODEL
         self.max_retries = max_retries
+        self.director_instruction = director_instruction or self.DIRECTOR_INSTRUCTION
 
     def resolve_voice(self, voice_name: Optional[str]) -> str:
         if not voice_name:
@@ -87,6 +95,15 @@ class GeminiVoiceEngine(BaseVoiceEngine):
             },
         }
 
+        if self.director_instruction:
+            payload["systemInstruction"] = {
+                "parts": [
+                    {
+                        "text": self.director_instruction
+                    }
+                ]
+            }
+
         req_data = json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
 
@@ -94,7 +111,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         for attempt in range(self.max_retries):
             try:
                 req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
-                with urllib.request.urlopen(req, timeout=15) as resp:
+                with urllib.request.urlopen(req, timeout=20) as resp:
                     resp_data = json.loads(resp.read().decode("utf-8"))
 
                 candidates = resp_data.get("candidates") or []
@@ -115,7 +132,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
                 raw_bytes = base64.b64decode(audio_inline["data"])
 
                 if "pcm" in mime_type or "l16" in mime_type:
-                    # Write 24000Hz 16-bit PCM mono to WAV
+                    # Write 24000Hz 16-bit PCM mono to standard WAV container
                     with wave.open(output_path, "wb") as wf:
                         wf.setnchannels(1)
                         wf.setsampwidth(2)
@@ -131,17 +148,19 @@ class GeminiVoiceEngine(BaseVoiceEngine):
                     with open(temp_in, "wb") as f:
                         f.write(raw_bytes)
                     cmd = ["ffmpeg", "-y", "-i", temp_in, "-ar", "24000", "-ac", "1", output_path]
-                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-                    if os.path.exists(temp_in):
-                        os.remove(temp_in)
+                    try:
+                        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                    finally:
+                        if os.path.exists(temp_in):
+                            os.remove(temp_in)
                     return output_path
 
             except Exception as e:
                 last_error = e
-                # If model not found, try fallback TTS model
-                if "404" in str(e) and self.model == "gemini-2.5-flash-preview-tts":
-                    self.model = "gemini-3.1-flash-tts-preview"
+                # If model not found or unavailable, try fallback TTS model
+                if ("404" in str(e) or "not found" in str(e).lower()) and self.model == DEFAULT_GEMINI_MODEL:
+                    self.model = FALLBACK_GEMINI_MODEL
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={api_key}"
-                time.sleep(0.2 * (1.5 ** attempt) + random.uniform(0.05, 0.15))
+                time.sleep(0.3 * (2 ** attempt) + random.uniform(0.1, 0.25))
 
         raise VoiceEngineError(f"Gemini TTS synthesis failed after {self.max_retries} attempts: {last_error}")

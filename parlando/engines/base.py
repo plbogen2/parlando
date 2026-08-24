@@ -38,7 +38,7 @@ class BaseVoiceEngine(abc.ABC):
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {}
             for idx, chunk in enumerate(chunks):
-                content_key = f"{chunk.character}:{chunk.text}:{getattr(chunk, 'ssml_rate', '')}:{getattr(chunk, 'ssml_pitch', '')}:{self.__class__.__name__}"
+                content_key = f"{chunk.character}:{chunk.text}:{chunk.ssml_rate}:{chunk.ssml_pitch}:{self.__class__.__name__}"
                 content_hash = hashlib.sha256(content_key.encode("utf-8")).hexdigest()[:16]
                 chunk_path = os.path.join(output_dir, f"chunk_{idx:05d}_{content_hash}.wav")
 

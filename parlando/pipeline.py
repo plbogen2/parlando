@@ -41,6 +41,7 @@ class PipelineConfig:
     max_workers: int = 4
     cache_dir: Optional[str] = None
     api_key: Optional[str] = None
+    model: Optional[str] = None
     generate_player: bool = True
     normalize_loudness: bool = True
 
@@ -102,11 +103,7 @@ class AudiobookPipeline:
             chap_text = f"# {chap.title}\n\n{chap.content}" if chap.title else chap.content
             chunks = self.chunker.chunk_text(chap_text, chapter_index=chap_idx)
             for c in chunks:
-                markup = self.director.process_chunk(c, dialogue_voice_override=self.config.dialogue_voice)
-                c.text = markup.clean_text
-                c.character = markup.voice_name
-                setattr(c, "ssml_rate", markup.ssml_rate)
-                setattr(c, "ssml_pitch", markup.ssml_pitch)
+                self.director.apply_to_chunk(c, dialogue_voice_override=self.config.dialogue_voice)
             all_chunks.extend(chunks)
 
         # 4. Neural Voice Synthesis
@@ -115,6 +112,7 @@ class AudiobookPipeline:
             self.config.backend,
             default_voice=self.config.voice,
             api_key=self.config.api_key,
+            model=self.config.model,
         )
 
         def _on_chunk_progress(idx, total, chunk):

@@ -47,12 +47,8 @@ class EdgeTTSVoiceEngine(BaseVoiceEngine):
 
         voice = self.resolve_voice(chunk.character)
 
-        rate_str = "+0%"
-        pitch_str = "+0Hz"
-        if hasattr(chunk, "ssml_rate") and chunk.ssml_rate:
-            rate_str = chunk.ssml_rate
-        if hasattr(chunk, "ssml_pitch") and chunk.ssml_pitch:
-            pitch_str = chunk.ssml_pitch
+        rate_str = chunk.ssml_rate or "+0%"
+        pitch_str = chunk.ssml_pitch or "+0Hz"
 
         mp3_temp = output_path.replace(".wav", ".mp3")
         last_error = None
@@ -60,17 +56,21 @@ class EdgeTTSVoiceEngine(BaseVoiceEngine):
         for attempt in range(self.max_retries):
             try:
                 loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                communicate = edge_tts.Communicate(text=text, voice=voice, rate=rate_str, pitch=pitch_str)
-                loop.run_until_complete(communicate.save(mp3_temp))
-                loop.close()
+                try:
+                    asyncio.set_event_loop(loop)
+                    communicate = edge_tts.Communicate(text=text, voice=voice, rate=rate_str, pitch=pitch_str)
+                    loop.run_until_complete(communicate.save(mp3_temp))
+                finally:
+                    loop.close()
 
                 if os.path.exists(mp3_temp) and os.path.getsize(mp3_temp) > 0:
                     import subprocess
                     cmd = ["ffmpeg", "-y", "-i", mp3_temp, "-ar", "24000", "-ac", "1", output_path]
-                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-                    if os.path.exists(mp3_temp):
-                        os.remove(mp3_temp)
+                    try:
+                        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                    finally:
+                        if os.path.exists(mp3_temp):
+                            os.remove(mp3_temp)
                     return output_path
             except Exception as e:
                 last_error = e

@@ -23,6 +23,9 @@ class NarrativeChunk:
     pause_after_ms: int = 0
     chapter_index: int = 0
     chunk_index: int = 0
+    ssml_rate: str = "+0%"
+    ssml_pitch: str = "+0Hz"
+    ssml_volume: str = "+0%"
 
 
 class NarrativeChunker:

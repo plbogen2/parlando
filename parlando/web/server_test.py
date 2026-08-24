@@ -72,6 +72,24 @@ class WebServerTest(unittest.TestCase):
         self.assertTrue(res["audio_base64"].startswith("data:audio/wav;base64,"))
         self.assertEqual(res["backend"], "mock")
 
+    def test_job_manager(self):
+        from parlando.web.server import JobManager
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".json") as tf:
+            db_path = tf.name
+        jm = JobManager(storage_path=db_path)
+        job = jm.create(title="Test Book", author="Test Author")
+        self.assertEqual(job["title"], "Test Book")
+        self.assertEqual(job["state"], "INITIALIZING")
+        
+        jm.update(job["id"], state="COMPLETE", progress=100.0)
+        fetched = jm.get(job["id"])
+        self.assertEqual(fetched["state"], "COMPLETE")
+        self.assertEqual(fetched["progress"], 100.0)
+        
+        jm.clear()
+        self.assertIsNone(jm.get(job["id"]))
+
 
 if __name__ == "__main__":
     unittest.main()

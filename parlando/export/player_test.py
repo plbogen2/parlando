@@ -25,7 +25,7 @@ class HTMLPlayerGeneratorTest(unittest.TestCase):
         self.assertIn("William Gibson", html)
         self.assertIn("cyber_deck.m4b", html)
         self.assertIn("Prologue", html)
-        self.assertIn("AudioContext", html)
+        self.assertIn("visualizer", html)
 
     def test_write_player_file(self):
         with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tf:
