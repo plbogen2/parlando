@@ -276,12 +276,12 @@ class DocumentParser:
     def _split_into_chapters(cls, text: str) -> List[Chapter]:
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
         if not paragraphs:
-            return [Chapter(title="Chapter 1", content="", chapter_index=0, word_count=0)]
+            return [Chapter(title="", content="", chapter_index=0, word_count=0)]
 
         has_headings = any(p.startswith("#") for p in paragraphs)
         if not has_headings:
             word_count = len(text.split())
-            return [Chapter(title="Chapter 1", content=text, chapter_index=0, word_count=word_count)]
+            return [Chapter(title="", content=text, chapter_index=0, word_count=word_count)]
 
         chapters: List[Chapter] = []
         current_title = "Prologue"

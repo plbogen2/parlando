@@ -33,10 +33,14 @@ class BaseVoiceEngine(abc.ABC):
         os.makedirs(output_dir, exist_ok=True)
         results = [None] * len(chunks)
 
+        import hashlib
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {}
             for idx, chunk in enumerate(chunks):
-                chunk_path = os.path.join(output_dir, f"chunk_{idx:05d}.wav")
+                content_key = f"{chunk.character}:{chunk.text}:{getattr(chunk, 'ssml_rate', '')}:{getattr(chunk, 'ssml_pitch', '')}:{self.__class__.__name__}"
+                content_hash = hashlib.sha256(content_key.encode("utf-8")).hexdigest()[:16]
+                chunk_path = os.path.join(output_dir, f"chunk_{idx:05d}_{content_hash}.wav")
 
                 if os.path.exists(chunk_path) and os.path.getsize(chunk_path) > 44:
                     results[idx] = chunk_path

@@ -51,15 +51,22 @@ class ProsodyDirector:
         normalized_text = self.normalize_text(chunk.text)
         assigned_voice = self._allocate_voice(chunk, dialogue_voice_override)
 
+        speed_offset_pct = 0
+        if self.pacing and self.pacing.speed_multiplier != 1.0:
+            speed_offset_pct = int(round((self.pacing.speed_multiplier - 1.0) * 100))
+
         if chunk.chunk_type == ChunkType.HEADING:
-            rate = "-4%"
+            rate_val = -4 + speed_offset_pct
             pitch = "-1Hz"
         elif chunk.chunk_type == ChunkType.DIALOGUE:
-            rate = "+2%"
+            rate_val = 2 + speed_offset_pct
             pitch = "+1Hz" if chunk.gender == "female" else "+0Hz"
         else:
-            rate = self.profile.rate_offset
+            base_offset = int(self.profile.rate_offset.replace("%", "").replace("+", "")) if self.profile.rate_offset else 0
+            rate_val = base_offset + speed_offset_pct
             pitch = self.profile.pitch_offset
+
+        rate = f"+{rate_val}%" if rate_val >= 0 else f"{rate_val}%"
 
         return ProsodyMarkup(
             raw_text=chunk.text,
