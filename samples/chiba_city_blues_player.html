@@ -4,63 +4,303 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chiba City Blues - Parlando Audiobook Player</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
   <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       background: radial-gradient(circle at 50% 0%, #0f172a 0%, #020617 100%);
+      color: #f1f5f9;
       min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
     }
-    .glow-cyan {
-      box-shadow: 0 0 25px rgba(6, 182, 212, 0.15);
+    .player-card {
+      max-width: 42rem;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid #1e293b;
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(6, 182, 212, 0.15);
+      transition: box-shadow 0.3s ease;
     }
-    .glow-cyan:hover {
-      box-shadow: 0 0 35px rgba(6, 182, 212, 0.3);
+    .player-card:hover {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 40px rgba(6, 182, 212, 0.25);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      background: rgba(8, 47, 73, 0.8);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 9999px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+      color: #22d3ee;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    .pulse-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 9999px;
+      background-color: #22d3ee;
+      box-shadow: 0 0 8px #22d3ee;
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .title {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: -0.025em;
+      line-height: 1.25;
+    }
+    .author {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-top: 0.35rem;
+    }
+    .visualizer-container {
+      position: relative;
+      background: rgba(2, 6, 23, 0.9);
+      border: 1px solid rgba(30, 41, 59, 0.8);
+      border-radius: 0.875rem;
+      padding: 0.75rem;
+      margin-bottom: 1.5rem;
+      height: 6.5rem;
+      overflow: hidden;
+    }
+    #visualizer {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 0.5rem;
+    }
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 0.5rem;
+    }
+    .slider-wrapper {
+      margin-bottom: 1.25rem;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 0.5rem;
+      background: #1e293b;
+      border-radius: 0.5rem;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 1.1rem;
+      height: 1.1rem;
+      border: none;
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+      cursor: pointer;
+    }
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .btn-icon {
+      padding: 0.65rem 0.9rem;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-icon:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #475569;
+    }
+    .btn-play {
+      padding: 0.75rem 1.75rem;
+      background: linear-gradient(135deg, #06b6d4 0%, #2563eb 100%);
+      color: #020617;
+      border: none;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 14px rgba(6, 182, 212, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-play:hover {
+      background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%);
+      box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5);
+      transform: translateY(-1px);
+    }
+    .btn-play svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      fill: currentColor;
+    }
+    .speed-select {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      border-radius: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .speed-select:hover {
+      border-color: #475569;
+    }
+    .chapters-section {
+      border-top: 1px solid rgba(30, 41, 59, 0.8);
+      padding-top: 1.25rem;
+    }
+    .chapters-header {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      margin-bottom: 0.75rem;
+    }
+    .chapters-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      max-height: 13rem;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+    }
+    .chapters-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .chapters-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .chapters-list::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .chapter-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.85rem;
+      border-radius: 0.6rem;
+      background: rgba(30, 41, 59, 0.45);
+      border: 1px solid rgba(30, 41, 59, 0.6);
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .chapter-item:hover {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: #475569;
+      color: #fff;
+    }
+    .chapter-item.active {
+      background: rgba(8, 47, 73, 0.6);
+      border-color: rgba(6, 182, 212, 0.6);
+    }
+    .chapter-item.active .chap-title {
+      color: #22d3ee;
+      font-weight: 600;
+    }
+    .chap-time {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+      color: #06b6d4;
     }
   </style>
 </head>
-<body class="text-slate-100 flex items-center justify-center p-4 min-h-screen">
-  <div class="max-w-2xl w-full bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 glow-cyan shadow-2xl">
+<body>
+  <div class="player-card">
     
-    <div class="text-center mb-6">
-      <div class="inline-flex items-center gap-2 px-3 py-1 bg-cyan-950/80 border border-cyan-500/30 rounded-full text-xs font-mono text-cyan-400 mb-3">
-        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+    <div class="header">
+      <div class="badge">
+        <span class="pulse-dot"></span>
         PARLANDO AUDIO MASTER
       </div>
-      <h1 class="text-2xl font-bold text-slate-100 tracking-tight">Chiba City Blues</h1>
-      <p class="text-sm font-medium text-slate-400 mt-1">by William Gibson</p>
+      <h1 class="title">Chiba City Blues</h1>
+      <p class="author">by William Gibson</p>
     </div>
 
     <!-- Web Audio FFT Visualizer -->
-    <div class="relative bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 mb-6">
-      <canvas id="visualizer" class="w-full h-24 rounded-lg block"></canvas>
+    <div class="visualizer-container">
+      <canvas id="visualizer"></canvas>
     </div>
 
     <audio id="audio" src="chiba_city_blues.mp3" preload="metadata"></audio>
 
     <!-- Progress Scrubber -->
-    <div class="mb-4">
-      <div class="flex justify-between text-xs font-mono text-slate-400 mb-1">
+    <div class="slider-wrapper">
+      <div class="time-row">
         <span id="curTime">00:00</span>
         <span id="durTime">00:00</span>
       </div>
-      <input type="range" id="seek" min="0" max="100" value="0" step="0.1"
-             class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+      <input type="range" id="seek" min="0" max="100" value="0" step="0.1">
     </div>
 
     <!-- Playback Controls -->
-    <div class="flex items-center justify-center gap-4 mb-6">
-      <button id="skipBack" class="p-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl transition text-sm">
-        -15s
-      </button>
-      <button id="playBtn" class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl shadow-lg transition flex items-center gap-2 text-base">
-        <svg id="playIcon" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    <div class="controls-row">
+      <button id="skipBack" class="btn-icon" title="Rewind 15 seconds">-15s</button>
+      <button id="playBtn" class="btn-play">
+        <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         <span id="playText">Play</span>
       </button>
-      <button id="skipFwd" class="p-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl transition text-sm">
-        +15s
-      </button>
-      <select id="speedSel" class="bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono rounded-xl px-2.5 py-2.5 outline-none">
+      <button id="skipFwd" class="btn-icon" title="Forward 15 seconds">+15s</button>
+      <select id="speedSel" class="speed-select" title="Playback Speed">
         <option value="0.75">0.75x</option>
         <option value="1.0" selected>1.0x</option>
         <option value="1.25">1.25x</option>
@@ -70,15 +310,15 @@
     </div>
 
     <!-- Chapter Navigation -->
-    <div class="border-t border-slate-800/80 pt-4">
-      <h3 class="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3">Chapters</h3>
-      <div id="chapterList" class="space-y-1.5 max-h-48 overflow-y-auto pr-1"></div>
+    <div class="chapters-section">
+      <h3 class="chapters-header">Chapters</h3>
+      <div id="chapterList" class="chapters-list"></div>
     </div>
 
   </div>
 
   <script>
-    const chapters = [{"title": "Chapter 1: The Sky Above the Port", "start_sec": 0.0, "end_sec": 58.07, "chapter_index": 0}, {"title": "Chapter 2: The Coffin Racks", "start_sec": 58.07, "end_sec": 88.721, "chapter_index": 1}];
+    const chapters = [{"title": "Chapter 1: The Sky Above the Port", "start_sec": 0.0, "end_sec": 64.0, "chapter_index": 0}, {"title": "Chapter 2: The Coffin Racks", "start_sec": 64.0, "end_sec": 102.0, "chapter_index": 1}];
     const audio = document.getElementById('audio');
     const playBtn = document.getElementById('playBtn');
     const playIcon = document.getElementById('playIcon');
@@ -158,16 +398,16 @@
     function renderChapters() {
       chapterList.innerHTML = '';
       if (!chapters || chapters.length === 0) {
-        chapterList.innerHTML = '<div class="text-xs text-slate-500 italic">No embedded chapter marks</div>';
+        chapterList.innerHTML = '<div style="font-size: 0.8rem; color: #64748b; font-style: italic; padding: 0.5rem;">No embedded chapter marks</div>';
         return;
       }
       chapters.forEach((ch, i) => {
         const div = document.createElement('div');
-        div.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-800/40 hover:bg-slate-800/80 cursor-pointer text-xs transition border border-slate-800/40';
+        div.className = 'chapter-item';
         div.id = 'chap-' + i;
         div.innerHTML = `
-          <span class="font-medium text-slate-200">${ch.title}</span>
-          <span class="font-mono text-cyan-400 text-xs">${fmt(ch.start_sec)}</span>
+          <span class="chap-title">${ch.title}</span>
+          <span class="chap-time">${fmt(ch.start_sec)}</span>
         `;
         div.onclick = () => {
           audio.currentTime = ch.start_sec;
@@ -184,9 +424,9 @@
         const el = document.getElementById('chap-' + i);
         if (el) {
           if (t >= ch.start_sec && t < (ch.end_sec || Infinity)) {
-            el.classList.add('border-cyan-500/50', 'bg-cyan-950/30');
+            el.classList.add('active');
           } else {
-            el.classList.remove('border-cyan-500/50', 'bg-cyan-950/30');
+            el.classList.remove('active');
           }
         }
       });
