@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "parlando"
+version = "1.0.0"
+description = "Neural prose and audiobook voice synthesis pipeline with intelligent prosody, semantic chunking, zero-crossing audio stitching, and Web Audio studio."
+readme = "README.md"
+authors = [
+    { name = "Paul L. Bogen", email = "plbogen@gmail.com" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+keywords = [
+    "audiobook",
+    "tts",
+    "speech-synthesis",
+    "parlando",
+    "marginalia",
+    "edge-tts",
+    "neural-voice",
+    "prosody",
+    "audio-dsp",
+    "m4b",
+    "epub"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Multimedia :: Sound/Audio :: Sound Synthesis",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "beautifulsoup4>=4.11.0",
+]
+
+[project.optional-dependencies]
+edge = [
+    "edge-tts>=6.1.0",
+]
+google = [
+    "google-genai>=0.1.0",
+    "google-cloud-texttospeech>=2.14.0",
+]
+openai = [
+    "openai>=1.0.0",
+]
+all = [
+    "edge-tts>=6.1.0",
+    "google-genai>=0.1.0",
+    "google-cloud-texttospeech>=2.14.0",
+    "openai>=1.0.0",
+    "mutagen>=1.46.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+
+[project.scripts]
+parlando = "cli:main"
+synth-audiobook = "cli:main"
+
+[project.urls]
+"Homepage" = "https://github.com/plbogen2/parlando"
+"Bug Tracker" = "https://github.com/plbogen2/parlando/issues"

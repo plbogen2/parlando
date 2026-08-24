@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audiobook Narrator // Neural Synthesis & Studio Console</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+  <style>
+    :root {
+      --bg-slate-950: #020617;
+      --bg-slate-900: #0f172a;
+      --bg-slate-800: #1e293b;
+      --border-slate-800: #1e293b;
+      --border-slate-700: #334155;
+    }
+    body { background-color: #020617; color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .bg-slate-950 { background-color: #020617; }
+    .bg-slate-900 { background-color: #0f172a; }
+    .bg-slate-800 { background-color: #1e293b; }
+    .border-slate-800 { border-color: #1e293b; }
+    .border-slate-700 { border-color: #334155; }
+    .text-slate-500 { color: #64748b; }
+    .text-slate-400 { color: #94a3b8; }
+    .text-slate-300 { color: #cbd5e1; }
+    .text-slate-200 { color: #e2e8f0; }
+    .text-slate-100 { color: #f1f5f9; }
+    .placeholder-slate-600::placeholder { color: #475569; }
+    .bg-cyan-950 { background-color: #083344; }
+    .bg-cyan-900 { background-color: #164e63; }
+    .border-cyan-800 { border-color: #155e75; }
+    .border-cyan-700 { border-color: #0e7490; }
+    .border-cyan-500 { border-color: #06b6d4; }
+    .text-cyan-400 { color: #22d3ee; }
+    .text-cyan-300 { color: #67e8f9; }
+    .text-cyan-200 { color: #a5f3fc; }
+    .bg-emerald-950 { background-color: #022c22; }
+    .border-emerald-800 { border-color: #065f46; }
+    .text-emerald-300 { color: #6ee7b7; }
+    .text-emerald-400 { color: #34d399; }
+    .bg-rose-950 { background-color: #4c0519; }
+    .border-rose-800 { border-color: #9f1239; }
+    .text-rose-400 { color: #fb7185; }
+    .text-rose-300 { color: #fda4af; }
+    .accent-cyan-400 { accent-color: #22d3ee; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen p-4 md:p-8 flex flex-col items-center">
+  
+  <div class="max-w-4xl w-full space-y-6">
+    
+    <!-- Top Deck Header -->
+    <header class="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-center space-x-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-cyan-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+          ♫
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-wider text-white flex items-center gap-2">
+            AUDIOBOOK NARRATOR <span class="text-xs font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">STUDIO WEB</span>
+          </h1>
+          <p class="text-xs text-slate-400 font-mono mt-0.5">Neural Speech Synthesis • Intelligent Prosody • Google Drive Sync</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3 text-xs font-mono text-slate-400">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-cyan-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          GRID READY
+        </span>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Left Column: Input & Settings (7 cols) -->
+      <section class="lg:col-span-7 space-y-6">
+        
+        <!-- Step 1: Manuscript Input Card -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-cyan-900 text-cyan-300 flex items-center justify-center text-xs">1</span>
+              Manuscript Source
+            </h2>
+            <!-- Input Tabs -->
+            <div class="flex bg-slate-950 rounded-lg p-1 border border-slate-800 text-xs font-mono">
+              <button onclick="setTab('paste')" id="tab-paste" class="tab-btn active px-3 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-700">Paste Text</button>
+              <button onclick="setTab('url')" id="tab-url" class="tab-btn px-3 py-1 rounded text-slate-400 hover:text-slate-200">Web URL</button>
+              <button onclick="setTab('upload')" id="tab-upload" class="tab-btn px-3 py-1 rounded text-slate-400 hover:text-slate-200">Upload File</button>
+            </div>
+          </div>
+
+          <!-- Paste Tab -->
+          <div id="content-paste" class="space-y-3">
+            <textarea id="input-text" rows="6" placeholder="Paste your chapter prose, story, or article text here..." 
+                      class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono transition-colors"></textarea>
+          </div>
+
+          <!-- URL Tab -->
+          <div id="content-url" class="space-y-3 hidden">
+            <label class="block text-xs font-mono text-slate-400">Live Manuscript URL (HTML, Web Fiction, Article):</label>
+            <div class="flex gap-2">
+              <input type="url" id="input-url" placeholder="https://www.baen.com/Chapters/..." 
+                     class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono"
+                     onkeydown="if(event.key==='Enter') analyzeInput()">
+              <button onclick="analyzeInput()" id="btn-inspect" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-mono text-cyan-300 border border-slate-700 flex items-center gap-1.5 transition-colors">
+                <span id="inspect-icon">🔍</span> <span id="inspect-text">Inspect</span>
+              </button>
+            </div>
+            <div id="inspect-status" class="hidden text-xs font-mono p-3 rounded-xl border bg-slate-950/80 border-slate-800 space-y-1"></div>
+          </div>
+
+          <!-- Upload Tab -->
+          <div id="content-upload" class="space-y-3 hidden">
+            <div id="drop-zone" class="border-2 border-dashed border-slate-800 hover:border-cyan-500 rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-950/40">
+              <input type="file" id="file-input" class="hidden" accept=".txt,.md,.markdown,.html,.htm,.epub,.pdf">
+              <div class="text-2xl mb-1">📄</div>
+              <div class="text-xs font-mono text-slate-300">Click to browse or drag & drop file</div>
+              <div class="text-[10px] text-slate-500 mt-1">Supports PDF (.pdf), Markdown (.md), Plain Text (.txt), HTML, EPUB</div>
+              <div id="file-name-display" class="mt-2 text-xs font-mono text-cyan-400 font-bold hidden"></div>
+            </div>
+          </div>
+
+          <!-- Metadata Fields -->
+          <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-800/80 mt-3">
+            <div>
+              <label class="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Audiobook Title</label>
+              <input type="text" id="meta-title" placeholder="Auto-detected or custom title" 
+                     class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono">
+            </div>
+            <div>
+              <label class="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Author Name</label>
+              <input type="text" id="meta-author" placeholder="Author" 
+                     class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Voice & Acoustic Direction Card -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-cyan-900 text-cyan-300 flex items-center justify-center text-xs">2</span>
+              Voice & Acoustic Direction
+            </h2>
+            <button id="btn-audition-voice" onclick="auditionSelectedVoice()" class="text-xs font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/60 border border-cyan-800">
+              <span>▶</span> Audition Voice
+            </button>
+          </div>
+
+          <!-- Voice Selector Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="voice-grid">
+            <!-- Voice Cards -->
+            <button onclick="selectVoice('Charon')" id="v-Charon" class="voice-card active p-2.5 rounded-xl border bg-cyan-950/50 border-cyan-500 text-left transition-all shadow-[0_0_12px_rgba(6,182,212,0.15)]">
+              <div class="font-bold text-xs text-cyan-200">Charon ★</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Deep, technical, crisp</div>
+            </button>
+            <button onclick="selectVoice('Fenrir')" id="v-Fenrir" class="voice-card p-2.5 rounded-xl border bg-slate-950 border-slate-800 text-left hover:border-slate-700 transition-all">
+              <div class="font-bold text-xs text-slate-200">Fenrir</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Gritty noir, baritone</div>
+            </button>
+            <button onclick="selectVoice('Aoede')" id="v-Aoede" class="voice-card p-2.5 rounded-xl border bg-slate-950 border-slate-800 text-left hover:border-slate-700 transition-all">
+              <div class="font-bold text-xs text-slate-200">Aoede</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Warm, lyrical alto</div>
+            </button>
+            <button onclick="selectVoice('Puck')" id="v-Puck" class="voice-card p-2.5 rounded-xl border bg-slate-950 border-slate-800 text-left hover:border-slate-700 transition-all">
+              <div class="font-bold text-xs text-slate-200">Puck</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Dynamic, fast pacing</div>
+            </button>
+            <button onclick="selectVoice('Kore')" id="v-Kore" class="voice-card p-2.5 rounded-xl border bg-slate-950 border-slate-800 text-left hover:border-slate-700 transition-all">
+              <div class="font-bold text-xs text-slate-200">Kore</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Calm, clear soprano</div>
+            </button>
+            <button onclick="selectVoice('Leda')" id="v-Leda" class="voice-card p-2.5 rounded-xl border bg-slate-950 border-slate-800 text-left hover:border-slate-700 transition-all">
+              <div class="font-bold text-xs text-slate-200">Leda</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Authoritative narrative</div>
+            </button>
+            <button onclick="selectVoice('Zephyr')" id="v-Zephyr" class="voice-card p-2.5 rounded-xl border bg-slate-950 border-slate-800 text-left hover:border-slate-700 transition-all">
+              <div class="font-bold text-xs text-slate-200">Zephyr</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Airy, modern tenor</div>
+            </button>
+            <button onclick="selectVoice('en-US-ChristopherNeural')" id="v-en-US-ChristopherNeural" class="voice-card p-2.5 rounded-xl border bg-slate-950 border-slate-800 text-left hover:border-slate-700 transition-all">
+              <div class="font-bold text-xs text-slate-200">Christopher</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Edge-TTS Neural</div>
+            </button>
+          </div>
+
+          <!-- Controls: Profile, Speed, Pacing -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            <div>
+              <label class="block text-[10px] font-mono text-slate-400 uppercase mb-1">Aesthetic Preset</label>
+              <select id="select-profile" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono">
+                <option value="technical_expository">Technical Expository</option>
+                <option value="cyberpunk_noir" selected>Cyberpunk Noir</option>
+                <option value="dramatic_fiction">Dramatic Fiction</option>
+                <option value="reflective_narrative">Reflective Narrative</option>
+                <option value="balanced_neutral">Balanced Neutral</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-mono text-slate-400 uppercase mb-1 flex justify-between">
+                <span>Speed</span>
+                <span id="speed-val" class="text-cyan-300">1.00x</span>
+              </label>
+              <input type="range" id="slider-speed" min="0.75" max="1.5" step="0.05" value="1.0" 
+                     class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                     oninput="document.getElementById('speed-val').innerText = parseFloat(this.value).toFixed(2) + 'x'">
+            </div>
+            <div>
+              <label class="block text-[10px] font-mono text-slate-400 uppercase mb-1">Workers</label>
+              <select id="select-workers" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono">
+                <option value="4">4 Workers</option>
+                <option value="8" selected>8 Workers (Fast)</option>
+                <option value="16">16 Workers (Turbo)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Google Drive Destination Card -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-3">
+              <input type="checkbox" id="check-gdrive" checked class="w-4 h-4 rounded bg-slate-950 border-slate-800 text-cyan-500 focus:ring-0 cursor-pointer">
+              <div>
+                <label for="check-gdrive" class="text-xs font-bold text-slate-200 cursor-pointer flex items-center gap-1.5">
+                  <span>☁️ Auto-Save to Google Drive</span>
+                </label>
+                <p class="text-[10px] text-slate-400 font-mono mt-0.5">Uploads master audio & standalone player console to Drive</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-mono text-cyan-400 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800">
+              Cloud Sync
+            </span>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">
+              <span>Destination Folder Path (Auto-created if needed)</span>
+            </label>
+            <input type="text" id="gdrive-folder-path" value="Audiobooks/Sci Fi" placeholder="e.g. Audiobooks/Sci Fi/Charles Stross or Folder ID" 
+                   class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-cyan-300 focus:outline-none focus:border-cyan-500 font-mono">
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              <span class="text-[9px] font-mono text-slate-500 uppercase self-center mr-1">Presets:</span>
+              <button type="button" onclick="setDriveFolder('Audiobooks/Sci Fi')" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:border-cyan-500 hover:text-cyan-300 transition-colors">Sci Fi</button>
+              <button type="button" onclick="setDriveFolder('Audiobooks/Cyberpunk')" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:border-cyan-500 hover:text-cyan-300 transition-colors">Cyberpunk</button>
+              <button type="button" onclick="setDriveFolder('Audiobooks/Fantasy')" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:border-cyan-500 hover:text-cyan-300 transition-colors">Fantasy</button>
+              <button type="button" onclick="setDriveFolder('Audiobooks/Novellas')" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:border-cyan-500 hover:text-cyan-300 transition-colors">Novellas</button>
+              <button type="button" onclick="setDriveFolder('Audiobooks')" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:border-cyan-500 hover:text-cyan-300 transition-colors">Root</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar: Synthesize Button -->
+        <button onclick="startSynthesis()" id="btn-synth" class="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-sm uppercase tracking-widest shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all active:scale-[0.99] flex items-center justify-center gap-2">
+          <span>⚡</span> Synthesize & Master Audiobook
+        </button>
+
+      </section>
+
+      <!-- Right Column: Live Telemetry, Player & Chapter Deck (5 cols) -->
+      <section class="lg:col-span-5 space-y-6">
+        
+        <!-- Live Synthesis Status Card -->
+        <div id="status-card" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="text-xs font-mono uppercase text-slate-400 tracking-wider">Acoustic Status</span>
+            <div class="flex items-center space-x-2">
+              <button onclick="clearCurrentJob()" title="Reset session or clear job" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 transition-colors">
+                Reset
+              </button>
+              <span id="job-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800">STANDBY</span>
+            </div>
+          </div>
+
+          <!-- Visual Progress -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <span id="progress-status-text" class="text-slate-300">Ready for manuscript</span>
+              <span id="progress-pct" class="text-cyan-300 font-bold">0%</span>
+            </div>
+            <div class="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+              <div id="progress-bar" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 w-0 transition-all duration-300 shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-400 pt-1">
+            <div>CHUNKS: <span id="telemetry-chunks" class="text-slate-200">0 / 0</span></div>
+            <div>EST. TIME: <span id="telemetry-time" class="text-slate-200">--:--</span></div>
+          </div>
+        </div>
+
+        <!-- Integrated Interactive Player Deck -->
+        <div id="player-deck" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h3 id="player-title" class="font-bold text-xs text-white">Audio Preview & Master</h3>
+              <p id="player-author" class="text-[10px] font-mono text-slate-400">Charles Stross • Charon</p>
+            </div>
+            <span id="player-duration-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+              00:00
+            </span>
+          </div>
+
+          <!-- Waveform Canvas -->
+          <div class="relative bg-black/60 border border-slate-800 rounded-xl overflow-hidden h-20 flex items-center justify-center">
+            <canvas id="waveform-canvas" class="w-full h-full"></canvas>
+            <div id="canvas-text" class="absolute top-2 left-3 text-[9px] font-mono text-cyan-400 uppercase tracking-widest pointer-events-none">
+              STANDBY // WAVEFORM MONITOR
+            </div>
+          </div>
+
+          <!-- Chapter / Section Selection List -->
+          <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1" id="player-chapter-list">
+            <!-- Dynamic chapter items -->
+          </div>
+
+          <!-- Controls -->
+          <div class="bg-slate-950/60 rounded-xl p-3 border border-slate-800/80 space-y-2">
+            <input type="range" id="player-seek" min="0" max="100" value="0" step="0.1"
+                   class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+            
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center space-x-2">
+                <button onclick="playerPrev()" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs font-mono text-cyan-300 border border-slate-800">⏮</button>
+                <button onclick="playerTogglePlay()" id="player-play-btn" class="p-2.5 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]">
+                  ▶
+                </button>
+                <button onclick="playerNext()" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs font-mono text-cyan-300 border border-slate-800">⏭</button>
+              </div>
+              <div class="text-[10px] font-mono text-slate-400" id="player-timer">00:00 / 00:00</div>
+            </div>
+          </div>
+
+          <!-- Google Drive Result Banner -->
+          <div id="gdrive-banner" class="hidden p-3 rounded-xl bg-cyan-950/40 border border-cyan-800 text-xs flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span>☁️</span>
+              <span class="text-cyan-200 font-mono text-[10px]">Saved to Google Drive</span>
+            </div>
+            <a id="gdrive-link" href="#" target="_blank" class="px-2.5 py-1 rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[10px] font-mono">
+              Open Drive ↗
+            </a>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+  </div>
+
+  <audio id="audio-player-core" preload="auto"></audio>
+  <audio id="preview-audio-core" preload="auto"></audio>
+
+  <script>
+    let currentTab = 'paste';
+    let selectedVoice = 'Charon';
+    let activeJobId = null;
+    let pollInterval = null;
+    let chaptersData = [];
+    let activeChapterIdx = 0;
+
+    const audioCore = document.getElementById('audio-player-core');
+    const previewAudio = document.getElementById('preview-audio-core');
+
+    function setTab(tab) {
+      currentTab = tab;
+      ['paste', 'url', 'upload'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const content = document.getElementById(`content-${t}`);
+        if (t === tab) {
+          btn.className = 'tab-btn active px-3 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-700';
+          content.classList.remove('hidden');
+        } else {
+          btn.className = 'tab-btn px-3 py-1 rounded text-slate-400 hover:text-slate-200';
+          content.classList.add('hidden');
+        }
+      });
+    }
+
+    function selectVoice(voice) {
+      selectedVoice = voice;
+      document.querySelectorAll('.voice-card').forEach(c => {
+        c.className = 'voice-card p-2.5 rounded-xl border bg-slate-950 border-slate-800 text-left hover:border-slate-700 transition-all';
+      });
+      const activeCard = document.getElementById(`v-${voice}`);
+      if (activeCard) {
+        activeCard.className = 'voice-card active p-2.5 rounded-xl border bg-cyan-950/50 border-cyan-500 text-left transition-all shadow-[0_0_12px_rgba(6,182,212,0.15)]';
+      }
+    }
+
+    let inspectedExcerpt = null;
+    let jobStartTime = null;
+
+    function setDriveFolder(path) {
+      document.getElementById('gdrive-folder-path').value = path;
+    }
+
+    // File Upload Handling
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    let uploadedFileContent = null;
+    let uploadedFileName = null;
+
+    dropZone.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('border-cyan-500'); };
+    dropZone.ondragleave = () => dropZone.classList.remove('border-cyan-500');
+    dropZone.ondrop = (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-cyan-500');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    };
+
+    function handleFile(file) {
+      if (!file) return;
+      uploadedFileName = file.name;
+      const isBinary = file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.epub');
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        uploadedFileContent = ev.target.result;
+        document.getElementById('file-name-display').innerText = `Selected: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+        document.getElementById('file-name-display').classList.remove('hidden');
+        if (!document.getElementById('meta-title').value) {
+          document.getElementById('meta-title').value = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ');
+        }
+        if (!isBinary && typeof uploadedFileContent === 'string') {
+          inspectedExcerpt = uploadedFileContent.slice(0, 300).trim();
+        }
+      };
+      if (isBinary) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
+    }
+
+    // Inspect & Analyze URL or Manuscript Input
+    async function analyzeInput() {
+      const urlInput = document.getElementById('input-url');
+      const url = urlInput.value.trim();
+      if (!url) {
+        alert('Please enter a valid URL to inspect.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-inspect');
+      const icon = document.getElementById('inspect-icon');
+      const text = document.getElementById('inspect-text');
+      const statusBox = document.getElementById('inspect-status');
+
+      btn.disabled = true;
+      btn.classList.add('opacity-60');
+      if (icon) icon.innerText = '⚡';
+      if (text) text.innerText = 'Inspecting...';
+      statusBox.classList.remove('hidden');
+      statusBox.innerHTML = '<span class="text-cyan-400 animate-pulse">Fetching manuscript and extracting metadata...</span>';
+
+      try {
+        const resp = await fetch('/api/inspect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        });
+        const data = await resp.json();
+
+        if (data.status === 'OK') {
+          if (data.title) document.getElementById('meta-title').value = data.title;
+          if (data.author && data.author !== 'Unknown Author') document.getElementById('meta-author').value = data.author;
+          if (data.sample_preview) inspectedExcerpt = data.sample_preview;
+
+          statusBox.innerHTML = `
+            <div class="text-emerald-400 font-bold flex items-center gap-1.5">
+              <span>✔</span> Detected: "${data.title}" ${data.author ? `by ${data.author}` : ''}
+            </div>
+            <div class="text-slate-400 text-[11px] pt-1">
+              • Structure: <span class="text-slate-200 font-bold">${data.chapters_count} chapter(s)</span> (~${data.total_words ? data.total_words.toLocaleString() : 0} words)
+              <br>• Estimated Audio: <span class="text-cyan-300 font-bold">~${data.estimated_duration_min} min</span>
+            </div>
+          `;
+          statusBox.className = 'text-xs font-mono p-3 rounded-xl border bg-emerald-950/20 border-emerald-800 space-y-1';
+
+          // Instantly preview detected chapters in the player deck
+          if (data.chapters && data.chapters.length) {
+            chaptersData = data.chapters.map((ch, idx) => ({
+              index: idx,
+              title: ch.title,
+              start_sec: 0,
+              timestamp: `~${ch.words} w`,
+            }));
+            renderPlayerChapters(chaptersData);
+            document.getElementById('player-title').innerText = data.title;
+            document.getElementById('player-author').innerText = `${data.author || 'Author'} • ${data.chapters_count} Chapters`;
+            document.getElementById('player-duration-badge').innerText = `${data.chapters_count} Chapters`;
+          }
+        } else {
+          statusBox.innerHTML = `<span class="text-rose-400">Inspection failed: ${data.error || 'Unknown error'}</span>`;
+          statusBox.className = 'text-xs font-mono p-3 rounded-xl border bg-rose-950/20 border-rose-800 space-y-1';
+        }
+      } catch (err) {
+        statusBox.innerHTML = `<span class="text-rose-400">Network error: ${err.message}</span>`;
+        statusBox.className = 'text-xs font-mono p-3 rounded-xl border bg-rose-950/20 border-rose-800 space-y-1';
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-60');
+        if (icon) icon.innerText = '🔍';
+        if (text) text.innerText = 'Inspect';
+      }
+    }
+
+    // Audition Sample Preview (runs concurrently even during active full runs)
+    async function auditionSelectedVoice(voiceOverride = null) {
+      const voice = voiceOverride || selectedVoice;
+      let sampleText = "The sky above the port was the color of television, tuned to a dead channel.";
+      if (currentTab === 'paste' && document.getElementById('input-text').value.trim()) {
+        sampleText = document.getElementById('input-text').value.trim().slice(0, 250);
+      } else if (inspectedExcerpt && inspectedExcerpt.trim().length > 10) {
+        sampleText = inspectedExcerpt.trim().slice(0, 250);
+      }
+
+      const btn = document.getElementById('btn-audition-voice');
+      if (btn) {
+        btn.innerHTML = `<span class="animate-spin">⚙</span> <span class="text-cyan-300">Auditioning ${voice}...</span>`;
+        btn.classList.add('opacity-80');
+      }
+
+      try {
+        const resp = await fetch('/api/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ voice: voice, text: sampleText })
+        });
+        const data = await resp.json();
+        if (data.audio_b64) {
+          previewAudio.src = data.audio_b64;
+          previewAudio.play();
+        }
+      } catch (err) {
+        console.error("Audition error:", err);
+      } finally {
+        if (btn) {
+          btn.innerHTML = `<span>▶</span> Audition Voice`;
+          btn.classList.remove('opacity-80');
+        }
+      }
+    }
+
+    // Start Full Synthesis
+    async function startSynthesis() {
+      const btn = document.getElementById('btn-synth');
+      btn.disabled = true;
+      btn.classList.add('opacity-60');
+
+      let payload = {
+        voice: selectedVoice,
+        profile: document.getElementById('select-profile').value,
+        speed: parseFloat(document.getElementById('slider-speed').value),
+        workers: parseInt(document.getElementById('select-workers').value),
+        title: document.getElementById('meta-title').value,
+        author: document.getElementById('meta-author').value,
+        upload_to_gdrive: document.getElementById('check-gdrive').checked,
+        gdrive_folder_path: document.getElementById('gdrive-folder-path').value,
+      };
+
+      if (currentTab === 'paste') {
+        payload.text = document.getElementById('input-text').value;
+      } else if (currentTab === 'url') {
+        payload.url = document.getElementById('input-url').value;
+      } else if (currentTab === 'upload') {
+        payload.file_content = uploadedFileContent;
+        payload.file_name = uploadedFileName;
+      }
+
+      document.getElementById('job-badge').innerText = 'INITIALIZING';
+      document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800';
+      document.getElementById('progress-status-text').innerText = 'Decomposing prose chunks...';
+      document.getElementById('telemetry-time').innerText = '--:--';
+      jobStartTime = Date.now();
+
+      try {
+        const resp = await fetch('/api/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        activeJobId = data.job_id;
+        localStorage.setItem('active_audiobook_job_id', activeJobId);
+        startPolling(activeJobId);
+      } catch (err) {
+        alert('Synthesis launch error: ' + err);
+        btn.disabled = false;
+        btn.classList.remove('opacity-60');
+      }
+    }
+
+    async function clearCurrentJob() {
+      if (pollInterval) clearInterval(pollInterval);
+      const currentId = activeJobId || localStorage.getItem('active_audiobook_job_id');
+      localStorage.removeItem('active_audiobook_job_id');
+      activeJobId = null;
+      jobStartTime = null;
+
+      if (currentId) {
+        try {
+          await fetch('/api/jobs/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: currentId })
+          });
+        } catch (e) {
+          console.warn('Clear job request error:', e);
+        }
+      }
+
+      document.getElementById('job-badge').innerText = 'STANDBY';
+      document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800';
+      document.getElementById('progress-status-text').innerText = 'Ready for manuscript';
+      document.getElementById('telemetry-time').innerText = '--:--';
+      document.getElementById('telemetry-chunks').innerText = '0 / 0';
+      document.getElementById('progress-pct').innerText = '0%';
+      document.getElementById('progress-bar').style.width = '0%';
+      document.getElementById('btn-synth').disabled = false;
+      document.getElementById('btn-synth').classList.remove('opacity-60');
+    }
+
+    function startPolling(jobId) {
+      if (!jobStartTime) jobStartTime = Date.now();
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(async () => {
+        try {
+          const resp = await fetch(`/api/status/${jobId}`);
+          if (resp.status === 404) {
+            clearInterval(pollInterval);
+            localStorage.removeItem('active_audiobook_job_id');
+            document.getElementById('job-badge').innerText = 'STANDBY';
+            document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800';
+            document.getElementById('progress-status-text').innerText = 'Ready for manuscript';
+            document.getElementById('telemetry-time').innerText = '--:--';
+            document.getElementById('telemetry-chunks').innerText = '0 / 0';
+            document.getElementById('progress-pct').innerText = '0%';
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('btn-synth').disabled = false;
+            document.getElementById('btn-synth').classList.remove('opacity-60');
+            return;
+          }
+          const status = await resp.json();
+          if (status.status === 'ERROR' && status.error === 'Job not found') {
+            clearInterval(pollInterval);
+            localStorage.removeItem('active_audiobook_job_id');
+            document.getElementById('job-badge').innerText = 'STANDBY';
+            document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800';
+            document.getElementById('progress-status-text').innerText = 'Ready for manuscript';
+            document.getElementById('telemetry-time').innerText = '--:--';
+            document.getElementById('telemetry-chunks').innerText = '0 / 0';
+            document.getElementById('progress-pct').innerText = '0%';
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('btn-synth').disabled = false;
+            document.getElementById('btn-synth').classList.remove('opacity-60');
+            return;
+          }
+
+          const pct = Math.round(status.progress_percent || 0);
+          document.getElementById('progress-pct').innerText = `${pct}%`;
+          document.getElementById('progress-bar').style.width = `${pct}%`;
+          document.getElementById('telemetry-chunks').innerText = `${status.completed_chunks || 0} / ${status.total_chunks || 0}`;
+          document.getElementById('progress-status-text').innerText = status.status_text || 'Synthesizing...';
+
+          if (status.state === 'SYNTHESIZING') {
+            document.getElementById('job-badge').innerText = 'SYNTHESIZING';
+            document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800';
+          }
+
+          if (status.completed_chunks > 0 && status.total_chunks > status.completed_chunks) {
+            const elapsedSec = (Date.now() - jobStartTime) / 1000;
+            const secPerChunk = elapsedSec / status.completed_chunks;
+            const remainingSec = Math.round(secPerChunk * (status.total_chunks - status.completed_chunks));
+            document.getElementById('telemetry-time').innerText = formatTime(remainingSec);
+          }
+
+          if (status.state === 'DONE') {
+            clearInterval(pollInterval);
+            document.getElementById('telemetry-time').innerText = '00:00';
+            document.getElementById('job-badge').innerText = 'COMPLETED';
+            document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800';
+            document.getElementById('btn-synth').disabled = false;
+            document.getElementById('btn-synth').classList.remove('opacity-60');
+
+            // Load into player
+            loadCompletedJob(jobId, status);
+          } else if (status.state === 'ERROR') {
+            clearInterval(pollInterval);
+            document.getElementById('telemetry-time').innerText = '--:--';
+            document.getElementById('job-badge').innerText = 'FAILED';
+            document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800';
+            document.getElementById('progress-status-text').innerText = status.error || status.status_text || 'Error occurred';
+            document.getElementById('btn-synth').disabled = false;
+            document.getElementById('btn-synth').classList.remove('opacity-60');
+          }
+        } catch (e) {
+          console.error("Polling fault:", e);
+        }
+      }, 1000);
+    }
+
+    function renderPlayerChapters(chapters) {
+      const listEl = document.getElementById('player-chapter-list');
+      listEl.innerHTML = '';
+      if (!chapters || !chapters.length) return;
+
+      chapters.forEach((ch, idx) => {
+        const item = document.createElement('div');
+        item.id = `player-ch-${idx}`;
+        item.className = `p-2 rounded-lg border flex items-center justify-between text-xs cursor-pointer transition-colors ${
+          idx === activeChapterIdx && audioCore.src
+            ? 'bg-cyan-950/60 border-cyan-500 text-cyan-200 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
+            : 'bg-slate-950/40 border-slate-800 text-slate-300 hover:border-cyan-700 hover:bg-slate-950/70'
+        }`;
+        item.onclick = () => jumpToChapter(idx);
+        item.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="text-cyan-400 font-mono text-[10px] font-bold">${idx + 1}</span>
+            <span class="text-slate-200 font-medium">${ch.title}</span>
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">${ch.timestamp || '00:00'}</span>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    function highlightActiveChapter(idx) {
+      if (!chaptersData || !chaptersData.length) return;
+      chaptersData.forEach((_, k) => {
+        const el = document.getElementById(`player-ch-${k}`);
+        if (el) {
+          el.className = k === idx
+            ? 'p-2 rounded-lg border flex items-center justify-between text-xs cursor-pointer transition-colors bg-cyan-950/60 border-cyan-500 text-cyan-200 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
+            : 'p-2 rounded-lg border flex items-center justify-between text-xs cursor-pointer transition-colors bg-slate-950/40 border-slate-800 text-slate-300 hover:border-cyan-700 hover:bg-slate-950/70';
+        }
+      });
+    }
+
+    function loadCompletedJob(jobId, status) {
+      document.getElementById('player-title').innerText = status.title || 'Completed Audiobook';
+      document.getElementById('player-author').innerText = `${status.author || 'Author'} • Voiced by ${status.voice}`;
+      audioCore.src = `/api/audio/${jobId}`;
+      audioCore.load();
+
+      // Render chapters
+      chaptersData = status.chapters || [];
+      document.getElementById('player-duration-badge').innerText = `${chaptersData.length} Chapters`;
+      renderPlayerChapters(chaptersData);
+
+      // Check Drive status
+      if (status.gdrive_url) {
+        document.getElementById('gdrive-banner').classList.remove('hidden');
+        document.getElementById('gdrive-link').href = status.gdrive_url;
+      }
+    }
+
+    // Real Web Audio API Frequency Spectrum Setup
+    let audioCtx = null;
+    let analyser = null;
+    let dataArray = null;
+
+    function initWebAudio() {
+      if (!audioCtx) {
+        try {
+          const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtxClass) {
+            audioCtx = new AudioCtxClass();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 64;
+            analyser.smoothingTimeConstant = 0.8;
+            const source = audioCtx.createMediaElementSource(audioCore);
+            source.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+          }
+        } catch (e) {
+          console.warn("Web Audio API setup:", e);
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playerTogglePlay() {
+      initWebAudio();
+      if (audioCore.paused) {
+        audioCore.play();
+        document.getElementById('player-play-btn').innerText = '⏸';
+        document.getElementById('canvas-text').innerText = `PLAYING // ${document.getElementById('player-title').innerText.toUpperCase()}`;
+      } else {
+        audioCore.pause();
+        document.getElementById('player-play-btn').innerText = '▶';
+        document.getElementById('canvas-text').innerText = `PAUSED // ${document.getElementById('player-title').innerText.toUpperCase()}`;
+      }
+    }
+
+    function jumpToChapter(idx) {
+      if (chaptersData[idx]) {
+        activeChapterIdx = idx;
+        if (chaptersData[idx].start_sec !== undefined) {
+          audioCore.currentTime = chaptersData[idx].start_sec;
+        }
+        initWebAudio();
+        audioCore.play();
+        document.getElementById('player-play-btn').innerText = '⏸';
+        document.getElementById('player-title').innerText = chaptersData[idx].title;
+        document.getElementById('canvas-text').innerText = `PLAYING // ${chaptersData[idx].title.toUpperCase()}`;
+        highlightActiveChapter(idx);
+      }
+    }
+
+    function playerPrev() {
+      if (activeChapterIdx > 0) jumpToChapter(activeChapterIdx - 1);
+    }
+    function playerNext() {
+      if (activeChapterIdx < chaptersData.length - 1) jumpToChapter(activeChapterIdx + 1);
+    }
+
+    audioCore.addEventListener('timeupdate', () => {
+      if (audioCore.duration) {
+        const pct = (audioCore.currentTime / audioCore.duration) * 100;
+        document.getElementById('player-seek').value = pct;
+        document.getElementById('player-timer').innerText = `${formatTime(audioCore.currentTime)} / ${formatTime(audioCore.duration)}`;
+
+        // Dynamic Chapter Highlighting as audio progresses
+        for (let i = chaptersData.length - 1; i >= 0; i--) {
+          if (audioCore.currentTime >= (chaptersData[i].start_sec || 0)) {
+            if (activeChapterIdx !== i) {
+              activeChapterIdx = i;
+              document.getElementById('player-title').innerText = chaptersData[i].title;
+              document.getElementById('canvas-text').innerText = `PLAYING // ${chaptersData[i].title.toUpperCase()}`;
+              highlightActiveChapter(i);
+            }
+            break;
+          }
+        }
+      }
+    });
+
+    document.getElementById('player-seek').addEventListener('input', (e) => {
+      if (audioCore.duration) {
+        audioCore.currentTime = (e.target.value / 100) * audioCore.duration;
+      }
+    });
+
+    function formatTime(sec) {
+      if (isNaN(sec)) return '00:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // Session Restoration across Page Reload
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const resp = await fetch('/api/jobs/active');
+        const res = await resp.json();
+        const job = res.job || (res.job_id ? res : null);
+        if (job && job.job_id) {
+          activeJobId = job.job_id;
+          localStorage.setItem('active_audiobook_job_id', job.job_id);
+          if (job.title) document.getElementById('meta-title').value = job.title;
+          if (job.author && job.author !== 'Unknown Author') document.getElementById('meta-author').value = job.author;
+          if (job.voice) selectVoice(job.voice);
+
+          if (job.state === 'INITIALIZING' || job.state === 'SYNTHESIZING') {
+            document.getElementById('job-badge').innerText = job.state;
+            document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800';
+            document.getElementById('btn-synth').disabled = true;
+            document.getElementById('btn-synth').classList.add('opacity-60');
+            startPolling(job.job_id);
+          } else if (job.state === 'DONE') {
+            document.getElementById('job-badge').innerText = 'COMPLETED';
+            document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800';
+            document.getElementById('progress-pct').innerText = '100%';
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('telemetry-chunks').innerText = `${job.completed_chunks} / ${job.total_chunks}`;
+            document.getElementById('telemetry-time').innerText = '00:00';
+            loadCompletedJob(job.job_id, job);
+          } else if (job.state === 'ERROR') {
+            document.getElementById('job-badge').innerText = 'FAILED';
+            document.getElementById('job-badge').className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800';
+            document.getElementById('progress-status-text').innerText = job.error || job.status_text || 'Previous run failed';
+            document.getElementById('btn-synth').disabled = false;
+            document.getElementById('btn-synth').classList.remove('opacity-60');
+          }
+        }
+      } catch (e) {
+        console.log('No active job restored:', e);
+      }
+    });
+
+    // Real Frequency Spectrum Visualizer
+    const canvas = document.getElementById('waveform-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawWave() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const isPlaying = !audioCore.paused;
+      const numBars = 36;
+      const barWidth = canvas.width / numBars;
+
+      if (analyser && isPlaying && dataArray) {
+        analyser.getByteFrequencyData(dataArray);
+        for (let i = 0; i < numBars; i++) {
+          const dataIdx = Math.min(dataArray.length - 1, Math.floor((i / numBars) * dataArray.length));
+          const val = dataArray[dataIdx] / 255.0;
+          const h = Math.max(3, val * (canvas.height * 0.85));
+          const x = i * barWidth;
+          const y = (canvas.height - h) / 2;
+
+          const grad = ctx.createLinearGradient(0, y, 0, y + h);
+          grad.addColorStop(0, '#22d3ee');
+          grad.addColorStop(1, '#0891b2');
+          ctx.fillStyle = grad;
+
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(x + 1, y, Math.max(1, barWidth - 2), h, 2);
+          } else {
+            ctx.rect(x + 1, y, Math.max(1, barWidth - 2), h);
+          }
+          ctx.fill();
+        }
+      } else {
+        // Standby baseline
+        ctx.fillStyle = '#1e293b';
+        for (let i = 0; i < numBars; i++) {
+          const h = 4;
+          const x = i * barWidth;
+          const y = (canvas.height - h) / 2;
+          ctx.fillRect(x + 1, y, Math.max(1, barWidth - 2), h);
+        }
+      }
+      requestAnimationFrame(drawWave);
+    }
+    drawWave();
+    window.addEventListener('click', initWebAudio, { once: true });
+    window.addEventListener('keydown', initWebAudio, { once: true });
+  </script>
+</body>
+</html>

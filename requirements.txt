@@ -1,0 +1,7 @@
+beautifulsoup4>=4.11.0
+mutagen>=1.46.0
+
+# Optional providers (install as needed):
+# edge-tts>=6.1.0       # For free, high-quality Microsoft neural voices (no API key required)
+# google-genai>=0.1.0   # For Gemini Multimodal Audio / Cloud TTS
+# openai>=1.0.0         # For OpenAI TTS (alloy, onyx, echo, fable, nova, shimmer)
