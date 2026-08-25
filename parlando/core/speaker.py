@@ -449,52 +449,45 @@ class SceneAwareVoiceCaster:
             if char.assigned_voice:
                 voice_map[char.name] = char.assigned_voice
 
-        # 2. Try networkx graph coloring for remaining unassigned characters
+        # 2. Scene-aware voice allocation prioritized by character line count
         unassigned_names = [name for name, c in characters.items() if name not in voice_map]
         if not unassigned_names:
             return voice_map
 
-        try:
-            import networkx as nx
-            G = nx.Graph()
-            for name in unassigned_names:
-                G.add_node(name, line_count=characters[name].line_count, gender=characters[name].gender)
+        unassigned_sorted = sorted(unassigned_names, key=lambda n: (-characters[n].line_count, n))
+        used_pool_indices: Dict[str, set] = {"male": set(), "female": set(), "neutral": set()}
 
-            # Add edges for interactions
-            for name in unassigned_names:
-                char = characters[name]
-                for peer in char.interacts_with:
-                    if peer in unassigned_names:
-                        G.add_edge(name, peer)
+        for name in unassigned_sorted:
+            char = characters[name]
+            g_key = "female" if char.gender == "female" else ("male" if char.gender == "male" else "neutral")
+            pool = female_pool if g_key == "female" else (male_pool if g_key == "male" else neutral_pool)
 
-            # Greedy graph coloring ordered by degree / line count
-            colors = nx.coloring.greedy_color(G, strategy="largest_first")
+            neighbor_voices = {
+                characters[peer].assigned_voice
+                for peer in char.interacts_with
+                if peer in characters and characters[peer].assigned_voice
+            }
 
-            for name, color_idx in colors.items():
-                char = characters[name]
-                pool = female_pool if char.gender == "female" else (male_pool if char.gender == "male" else neutral_pool)
-                # Find conflicting voices among neighbors (including locked pre-assigned ones)
-                neighbor_voices = {
-                    characters[peer].assigned_voice
-                    for peer in char.interacts_with
-                    if peer in characters and characters[peer].assigned_voice
-                }
-                # Select voice
-                chosen = None
-                for offset in range(len(pool)):
-                    candidate = pool[(color_idx + offset) % len(pool)]
+            chosen = None
+            for idx, candidate in enumerate(pool):
+                if candidate not in neighbor_voices and idx not in used_pool_indices[g_key]:
+                    chosen = candidate
+                    used_pool_indices[g_key].add(idx)
+                    break
+
+            if not chosen:
+                for candidate in pool:
                     if candidate not in neighbor_voices:
                         chosen = candidate
                         break
-                if not chosen:
-                    chosen = pool[color_idx % len(pool)]
 
-                voice_map[name] = chosen
-                char.assigned_voice = chosen
+            if not chosen:
+                chosen = pool[0]
 
-            return voice_map
-        except ImportError:
-            pass
+            voice_map[name] = chosen
+            char.assigned_voice = chosen
+
+        return voice_map
 
         # 3. Fallback heuristic sorting by line count
         sorted_chars = sorted(characters.values(), key=lambda c: c.line_count, reverse=True)
