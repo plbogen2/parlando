@@ -8,8 +8,8 @@ from typing import Dict, List, Optional
 DEFAULT_SAMPLE_RATE = 24000
 DEFAULT_BIT_DEPTH = 16
 DEFAULT_CHANNELS = 1  # Mono for speech synthesis
-DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-tts-preview"
-FALLBACK_GEMINI_MODEL = "gemini-2.5-pro-preview-tts"
+DEFAULT_GEMINI_MODEL = "gemini-2.5-pro-preview-tts"
+FALLBACK_GEMINI_MODEL = "gemini-2.0-flash"
 
 
 class AudioFormat(str, Enum):
