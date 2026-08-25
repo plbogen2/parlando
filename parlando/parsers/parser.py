@@ -102,27 +102,41 @@ class DocumentParser:
     @classmethod
     def from_markdown_file(cls, filepath: str) -> ParsedDocument:
         with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-            content = f.read()
+            raw_content = f.read()
 
         title = os.path.splitext(os.path.basename(filepath))[0].replace("_", " ").title()
         author = "Unknown Author"
-        meta = {}
+        meta: Dict[str, str] = {}
+        content = raw_content
 
-        if content.startswith("---"):
-            parts = content.split("---", 2)
-            if len(parts) >= 3:
-                frontmatter = parts[1]
-                content = parts[2]
-                for line in frontmatter.splitlines():
-                    if ":" in line:
-                        k, v = line.split(":", 1)
-                        k = k.strip().lower()
-                        v = v.strip().strip('"').strip("'")
-                        meta[k] = v
-                        if k == "title":
-                            title = v
-                        elif k == "author":
-                            author = v
+        try:
+            import frontmatter
+            post = frontmatter.loads(raw_content)
+            content = post.content
+            for k, v in post.metadata.items():
+                k_str = str(k).strip().lower()
+                v_str = str(v).strip()
+                meta[k_str] = v_str
+                if k_str == "title":
+                    title = v_str
+                elif k_str == "author":
+                    author = v_str
+        except ImportError:
+            if raw_content.startswith("---"):
+                parts = raw_content.split("---", 2)
+                if len(parts) >= 3:
+                    frontmatter_str = parts[1]
+                    content = parts[2]
+                    for line in frontmatter_str.splitlines():
+                        if ":" in line:
+                            k, v = line.split(":", 1)
+                            k = k.strip().lower()
+                            v = v.strip().strip('"').strip("'")
+                            meta[k] = v
+                            if k == "title":
+                                title = v
+                            elif k == "author":
+                                author = v
 
         cleaned = cls.clean_prose(content)
         chapters = cls._split_into_chapters(cleaned)

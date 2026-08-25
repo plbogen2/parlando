@@ -110,6 +110,21 @@ class AudioBuffer:
         start = max(0, target_idx - window_samples)
         end = min(n - 1, target_idx + window_samples)
 
+        try:
+            import numpy as np
+            arr = np.frombuffer(self.samples, dtype=np.int16)[start : end + 1]
+            signs = np.signbit(arr)
+            zero_crossings = np.where(signs[:-1] != signs[1:])[0]
+            if len(zero_crossings) > 0:
+                actual_indices = start + zero_crossings
+                diffs = np.abs(actual_indices - target_idx)
+                best_zc = int(actual_indices[np.argmin(diffs)])
+                s1 = abs(self.samples[best_zc])
+                s2 = abs(self.samples[min(n - 1, best_zc + 1)])
+                return best_zc if s1 <= s2 else min(n - 1, best_zc + 1)
+        except ImportError:
+            pass
+
         best_idx = target_idx
         min_val = abs(self.samples[target_idx])
 
@@ -128,16 +143,33 @@ class AudioBuffer:
         if len(self.samples) == 0:
             return AudioBuffer(sample_rate=self.sample_rate)
 
+        pad_samples = int((padding_ms / 1000.0) * self.sample_rate)
+        n = len(self.samples)
+
+        try:
+            import numpy as np
+            arr = np.frombuffer(self.samples, dtype=np.int16)
+            active = np.where(np.abs(arr) > threshold_amplitude)[0]
+            if len(active) == 0:
+                return AudioBuffer(sample_rate=self.sample_rate)
+            start = max(0, int(active[0]) - pad_samples)
+            end = min(n, int(active[-1]) + 1 + pad_samples)
+            start_zc = self.find_nearest_zero_crossing(start)
+            end_zc = self.find_nearest_zero_crossing(end)
+            return AudioBuffer(samples=self.samples[start_zc:end_zc], sample_rate=self.sample_rate)
+        except ImportError:
+            pass
+
         start = 0
         for i, s in enumerate(self.samples):
             if abs(s) > threshold_amplitude:
-                start = max(0, i - int((padding_ms / 1000.0) * self.sample_rate))
+                start = max(0, i - pad_samples)
                 break
 
         end = len(self.samples)
         for i in range(len(self.samples) - 1, -1, -1):
             if abs(self.samples[i]) > threshold_amplitude:
-                end = min(len(self.samples), i + int((padding_ms / 1000.0) * self.sample_rate))
+                end = min(len(self.samples), i + pad_samples)
                 break
 
         if start >= end:
@@ -166,6 +198,21 @@ class AudioBuffer:
             self.append(other)
             return
 
+        try:
+            import numpy as np
+            tail_start = len(self.samples) - fade_samples
+            arr_a = np.frombuffer(self.samples, dtype=np.int16)[tail_start:]
+            arr_b = np.frombuffer(other.samples, dtype=np.int16)[:fade_samples]
+            ramp = np.linspace(0.0, np.pi / 2.0, fade_samples, endpoint=False)
+            blended = (arr_a * np.cos(ramp) + arr_b * np.sin(ramp)).clip(-32768, 32767).astype(np.int16)
+
+            self.samples = self.samples[:tail_start]
+            self.samples.frombytes(blended.tobytes())
+            self.samples.extend(other.samples[fade_samples:])
+            return
+        except ImportError:
+            pass
+
         tail_start = len(self.samples) - fade_samples
         for i in range(fade_samples):
             factor = i / float(fade_samples)
@@ -179,7 +226,13 @@ class AudioBuffer:
 
     @staticmethod
     def _fft(x: List[complex]) -> List[complex]:
-        """Recursive Cooley-Tukey radix-2 FFT on complex list."""
+        """Recursive Cooley-Tukey radix-2 FFT on complex list with optional numpy acceleration."""
+        try:
+            import numpy as np
+            return list(np.fft.fft(x))
+        except ImportError:
+            pass
+
         n = len(x)
         if n <= 1:
             return x
@@ -192,6 +245,12 @@ class AudioBuffer:
         """Compute Root Mean Square amplitude of 16-bit PCM samples."""
         if not self.samples:
             return 0.0
+        try:
+            import numpy as np
+            arr = np.frombuffer(self.samples, dtype=np.int16).astype(np.float64)
+            return float(np.sqrt(np.mean(arr ** 2)))
+        except ImportError:
+            pass
         mean_sq = sum(s * s for s in self.samples) / len(self.samples)
         return math.sqrt(mean_sq)
 
@@ -200,6 +259,14 @@ class AudioBuffer:
         n = len(self.samples)
         if n < 2 or self.sample_rate <= 0:
             return 0.0
+        try:
+            import numpy as np
+            arr = np.frombuffer(self.samples, dtype=np.int16)
+            zc = int(np.sum(np.signbit(arr[:-1]) != np.signbit(arr[1:])))
+            duration_s = n / float(self.sample_rate)
+            return (zc / duration_s) / 2.0 if duration_s > 0 else 0.0
+        except ImportError:
+            pass
         zc = 0
         for i in range(1, n):
             if (self.samples[i - 1] <= 0 and self.samples[i] > 0) or (self.samples[i - 1] >= 0 and self.samples[i] < 0):
@@ -208,14 +275,7 @@ class AudioBuffer:
         return (zc / duration_s) / 2.0 if duration_s > 0 else 0.0
 
     def analyze_speech_spectrum(self, window_size: int = 2048, hop_size: int = 1024) -> dict:
-        """Perform spectral FFT analysis to determine energy distribution across speech formants.
-
-        Analyzes:
-        - RMS energy level
-        - Zero-crossing frequency
-        - Energy concentration in standard speech formant band (80 Hz to 4000 Hz)
-        - Spectral crest factor (formant peak prominence vs flat noise floor)
-        """
+        """Perform spectral FFT analysis to determine energy distribution across speech formants."""
         n_samples = len(self.samples)
         if n_samples == 0:
             return {"is_speech": False, "rms": 0.0, "reason": "empty_buffer"}
@@ -226,7 +286,51 @@ class AudioBuffer:
 
         zcr_hz = self.compute_zero_crossing_rate()
 
-        # Extract windows for FFT
+        freq_bin_width = self.sample_rate / float(window_size)
+        min_speech_bin = max(1, int(80.0 / freq_bin_width))
+        max_speech_bin = min(window_size // 2 - 1, int(4000.0 / freq_bin_width))
+
+        try:
+            import numpy as np
+            arr = np.frombuffer(self.samples, dtype=np.int16).astype(np.float64)
+            if n_samples < window_size:
+                arr = np.pad(arr, (0, window_size - n_samples))
+                windows = [arr]
+            else:
+                num_windows = min(30, (n_samples - window_size) // hop_size + 1)
+                windows = [arr[i * hop_size : i * hop_size + window_size] for i in range(num_windows)]
+
+            hanning = np.hanning(window_size)
+            total_power = 0.0
+            total_speech_power = 0.0
+            peak_speech_bin = 0.0
+
+            for win in windows:
+                spectrum = np.abs(np.fft.rfft(win * hanning)) ** 2
+                pos_spec = spectrum[1:]
+                total_power += float(np.sum(pos_spec))
+                speech_slice = spectrum[min_speech_bin : max_speech_bin + 1]
+                if len(speech_slice) > 0:
+                    total_speech_power += float(np.sum(speech_slice))
+                    peak_speech_bin = max(peak_speech_bin, float(np.max(speech_slice)))
+
+            speech_ratio = (total_speech_power / total_power) if total_power > 0 else 0.0
+            num_speech_bins = max(1, max_speech_bin - min_speech_bin + 1)
+            avg_speech_bin_val = (total_speech_power / num_speech_bins) if total_speech_power > 0 else 1.0
+            crest_factor = (peak_speech_bin / avg_speech_bin_val) if avg_speech_bin_val > 0 else 0.0
+
+            is_speech = (rms > 150.0) and (speech_ratio >= 0.50) and (30 <= zcr_hz <= 4500) and (crest_factor > 1.8)
+            return {
+                "is_speech": is_speech,
+                "rms": round(rms, 2),
+                "zcr_hz": round(zcr_hz, 1),
+                "speech_band_ratio": round(speech_ratio, 4),
+                "spectral_crest_factor": round(crest_factor, 2),
+            }
+        except ImportError:
+            pass
+
+        # Extract windows for FFT fallback
         if n_samples < window_size:
             padded = list(self.samples) + [0] * (window_size - n_samples)
             windows = [padded]
@@ -234,22 +338,16 @@ class AudioBuffer:
             num_windows = min(30, (n_samples - window_size) // hop_size + 1)
             windows = [list(self.samples[i * hop_size : i * hop_size + window_size]) for i in range(num_windows)]
 
-        freq_bin_width = self.sample_rate / float(window_size)
-        min_speech_bin = max(1, int(80.0 / freq_bin_width))
-        max_speech_bin = min(window_size // 2 - 1, int(4000.0 / freq_bin_width))
-
         total_speech_power = 0.0
         total_power = 0.0
         peak_speech_bin_val = 0.0
-
-        # Precompute Hanning window coefficients
         hanning = [0.5 * (1.0 - math.cos(2.0 * math.pi * i / (window_size - 1))) for i in range(window_size)]
 
         for win in windows:
             complex_in = [win[i] * hanning[i] for i in range(window_size)]
             spectrum = self._fft(complex_in)
             half_n = window_size // 2
-            for bin_idx in range(1, half_n):  # Skip DC bin 0
+            for bin_idx in range(1, half_n):
                 power = abs(spectrum[bin_idx]) ** 2
                 total_power += power
                 if min_speech_bin <= bin_idx <= max_speech_bin:
@@ -262,11 +360,6 @@ class AudioBuffer:
         avg_speech_bin_val = (total_speech_power / num_speech_bins) if total_speech_power > 0 else 1.0
         crest_factor = (peak_speech_bin_val / avg_speech_bin_val) if avg_speech_bin_val > 0 else 0.0
 
-        # Speech criteria:
-        # 1. Non-silent RMS (> 150)
-        # 2. Significant power (> 50%) concentrated in human speech formant band (80Hz - 4kHz)
-        # 3. Valid speech ZCR range (30Hz - 4500Hz)
-        # 4. Formant spectral crest > 1.8 (distinct from flat white/pink noise)
         is_speech = (rms > 150.0) and (speech_ratio >= 0.50) and (30 <= zcr_hz <= 4500) and (crest_factor > 1.8)
 
         return {

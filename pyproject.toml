@@ -44,6 +44,9 @@ dependencies = [
     "mutagen>=1.46.0",
     "edge-tts>=6.1.0",
     "numpy>=1.20.0",
+    "python-frontmatter>=1.0.0",
+    "PyYAML>=6.0",
+    "networkx>=3.0",
 ]
 
 [tool.setuptools.packages.find]
