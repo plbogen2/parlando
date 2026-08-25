@@ -32,3 +32,17 @@ Case slotted the plastic card into the console. "Does the terminal jack work? La
 "Girl with mirrored glasses came by an hour ago," the clerk muttered, adjusting his collar. "Didn't leave a name. Said you'd know who she was. Don't cause trouble in the racks, Case."
 
 Case climbed the aluminum ladder to unit forty-two. The magnetic lock clicked open with a sharp hydraulic hiss. Inside the capsule, the cooling fan hummed a low, steady drone—the white noise of twenty-first century solitude.
+
+He lay on the foam slab, watching the red digital readout of the wall clock tick past midnight.
+
+A soft click broke the silence. The capsule door slid open three inches.
+
+"Case," a woman's voice whispered from the darkness.
+
+He sat up fast, reaching for the shuriken taped under the shelf. "Who's there?"
+
+"Relax, cowboy," she said, slipping inside with the fluid grace of a predatory cat. The dim red LED illuminated twin mirrored lenses surgically sealed into her cheekbones, reflecting his own pale face. Beneath her burgundy fingernails, four centimeters of double-edged scalpel steel glinted in the gloom. "I'm Molly. My employer wants to buy your debt."
+
+"I don't have an employer," Case said, his pulse hammering against his ribs.
+
+"You do now," Molly smiled, retracting the blades with a soft metallic click. "His name is Armitage. And he can fix your nervous system."
