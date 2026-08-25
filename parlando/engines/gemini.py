@@ -38,6 +38,17 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         "authentic emotional depth, natural pacing, clear dialogue distinction, and rich atmospheric nuance."
     )
 
+    EDGE_VOICE_MAP = {
+        "Fenrir": "en-US-ChristopherNeural",
+        "Puck": "en-US-GuyNeural",
+        "Charon": "en-GB-RyanNeural",
+        "Aoede": "en-US-JennyNeural",
+        "Kore": "en-US-AriaNeural",
+        "Leda": "en-GB-SoniaNeural",
+        "Oran": "en-US-EricNeural",
+        "Zephyr": "en-US-RogerNeural",
+    }
+
     def __init__(
         self,
         default_voice: str = "Fenrir",
@@ -51,7 +62,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
         self.model = model or DEFAULT_GEMINI_MODEL
         self.max_retries = max_retries
-        self.director_instruction = director_instruction or self.DIRECTOR_INSTRUCTION
+        self.director_instruction = director_instruction
 
     def resolve_voice(self, voice_name: Optional[str]) -> str:
         if not voice_name:
@@ -68,7 +79,8 @@ class GeminiVoiceEngine(BaseVoiceEngine):
 
         api_key = self.api_key or os.environ.get("GEMINI_API_KEY")
         if not api_key:
-            raise VoiceEngineError("GEMINI_API_KEY is not configured for Gemini voice synthesis.")
+            # Fallback to EdgeTTS if Gemini API key is missing
+            return self._fallback_edge(chunk, output_path, "GEMINI_API_KEY not configured")
 
         voice = self.resolve_voice(chunk.voice or chunk.character)
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={api_key}"
@@ -94,15 +106,6 @@ class GeminiVoiceEngine(BaseVoiceEngine):
                 },
             },
         }
-
-        if self.director_instruction:
-            payload["systemInstruction"] = {
-                "parts": [
-                    {
-                        "text": self.director_instruction
-                    }
-                ]
-            }
 
         req_data = json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
@@ -155,12 +158,41 @@ class GeminiVoiceEngine(BaseVoiceEngine):
                             os.remove(temp_in)
                     return output_path
 
-            except Exception as e:
-                last_error = e
-                # If model not found or unavailable, try fallback TTS model
-                if ("404" in str(e) or "not found" in str(e).lower()) and self.model == DEFAULT_GEMINI_MODEL:
+            except urllib.error.HTTPError as e:
+                err_body = ""
+                try:
+                    err_body = e.read().decode("utf-8")
+                except Exception:
+                    pass
+                last_error = f"HTTP {e.code}: {err_body or str(e)}"
+                if e.code == 429:
+                    # Rate limit encountered - sleep briefly or fall back if retries exhausted
+                    time.sleep(0.5 * (2 ** attempt) + random.uniform(0.1, 0.3))
+                elif e.code in (404, 400) and self.model == DEFAULT_GEMINI_MODEL:
                     self.model = FALLBACK_GEMINI_MODEL
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={api_key}"
+                else:
+                    time.sleep(0.3 * (2 ** attempt) + random.uniform(0.1, 0.25))
+
+            except Exception as e:
+                last_error = e
                 time.sleep(0.3 * (2 ** attempt) + random.uniform(0.1, 0.25))
 
-        raise VoiceEngineError(f"Gemini TTS synthesis failed after {self.max_retries} attempts: {last_error}")
+        # Fall back gracefully to EdgeTTS so the chunk is never silent
+        return self._fallback_edge(chunk, output_path, f"Gemini synthesis failed ({last_error})")
+
+    def _fallback_edge(self, chunk: NarrativeChunk, output_path: str, reason: str) -> str:
+        """Falls back to EdgeTTS engine to guarantee non-silent speech playback."""
+        print(f"[WARN] {reason}. Falling back to EdgeTTS for chunk.")
+        try:
+            from .edge import EdgeVoiceEngine
+            resolved_gemini_voice = self.resolve_voice(chunk.voice or chunk.character)
+            edge_voice = self.EDGE_VOICE_MAP.get(resolved_gemini_voice, "en-US-ChristopherNeural")
+            edge_engine = EdgeVoiceEngine(default_voice=edge_voice)
+            import dataclasses
+            fallback_chunk = dataclasses.replace(chunk, voice=edge_voice)
+            return edge_engine.synthesize_chunk(fallback_chunk, output_path)
+        except Exception as fallback_err:
+            print(f"[ERROR] EdgeTTS fallback also failed: {fallback_err}. Falling back to silence pad.")
+            AudioBuffer.create_silence(duration_ms=max(500, chunk.pause_after_ms)).to_wav_file(output_path)
+            return output_path
