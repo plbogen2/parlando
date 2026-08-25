@@ -20,6 +20,15 @@ from .base import BaseVoiceEngine, VoiceEngineError
 class GeminiVoiceEngine(BaseVoiceEngine):
     """Studio neural voice synthesis via Google Gemini Multimodal Audio API."""
 
+    # Canonical 30 voices supported by Gemini Native Audiogen & VoiceLM
+    ALL_30_VOICES = [
+        "Puck", "Charon", "Kore", "Fenrir", "Aoede", "Leda", "Orus", "Zephyr",
+        "Callirrhoe", "Autonoe", "Enceladus", "Iapetus", "Umbriel", "Algieba",
+        "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia", "Achernar",
+        "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird", "Zubenelgenubi",
+        "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat"
+    ]
+
     # Bridge map for translating EdgeTTS neural voice names to Gemini names
     EDGE_TO_GEMINI_MAP = {
         "en-US-ChristopherNeural": "Fenrir",
@@ -28,8 +37,14 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         "en-US-JennyNeural": "Aoede",
         "en-US-AriaNeural": "Kore",
         "en-GB-SoniaNeural": "Leda",
-        "en-US-EricNeural": "Oran",
+        "en-US-EricNeural": "Orus",
         "en-US-RogerNeural": "Zephyr",
+        "en-US-AvaNeural": "Callirrhoe",
+        "en-US-EmmaNeural": "Autonoe",
+        "en-US-AndrewNeural": "Enceladus",
+        "en-US-BrianNeural": "Iapetus",
+        "en-GB-LibbyNeural": "Laomedeia",
+        "en-US-AnaNeural": "Despina",
     }
 
     # Fallback map for translating Gemini names to EdgeTTS names on engine failover
@@ -40,8 +55,31 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         "Aoede": "en-US-JennyNeural",
         "Kore": "en-US-AriaNeural",
         "Leda": "en-GB-SoniaNeural",
+        "Orus": "en-US-EricNeural",
         "Oran": "en-US-EricNeural",
         "Zephyr": "en-US-RogerNeural",
+        "Callirrhoe": "en-US-AvaNeural",
+        "Autonoe": "en-US-EmmaNeural",
+        "Enceladus": "en-US-AndrewNeural",
+        "Iapetus": "en-US-BrianNeural",
+        "Umbriel": "en-US-GuyNeural",
+        "Algieba": "en-US-ChristopherNeural",
+        "Despina": "en-US-AnaNeural",
+        "Erinome": "en-US-AriaNeural",
+        "Algenib": "en-US-GuyNeural",
+        "Rasalgethi": "en-US-EricNeural",
+        "Laomedeia": "en-GB-LibbyNeural",
+        "Achernar": "en-US-RogerNeural",
+        "Alnilam": "en-US-ChristopherNeural",
+        "Schedar": "en-US-JennyNeural",
+        "Gacrux": "en-US-GuyNeural",
+        "Pulcherrima": "en-US-AriaNeural",
+        "Achird": "en-US-RogerNeural",
+        "Zubenelgenubi": "en-US-EricNeural",
+        "Vindemiatrix": "en-US-JennyNeural",
+        "Sadachbia": "en-US-AndrewNeural",
+        "Sadaltager": "en-US-AriaNeural",
+        "Sulafat": "en-US-JennyNeural",
     }
 
     def __init__(

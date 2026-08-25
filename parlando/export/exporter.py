@@ -146,3 +146,39 @@ class AudioExporter:
         except Exception:
             shutil.copyfile(raw_wav, output_path)
             return output_path
+
+    @classmethod
+    def verify_file_speech(cls, filepath: str) -> dict:
+        """Decodes any WAV, MP3, or M4B container and runs FFT spectral speech verification."""
+        if not os.path.exists(filepath):
+            return {"is_speech": False, "reason": "file_not_found"}
+
+        ext = os.path.splitext(filepath)[1].lower()
+        if ext == ".wav":
+            buf = AudioBuffer.from_wav_file(filepath)
+            return buf.analyze_speech_spectrum()
+
+        # For MP3/M4B/etc, decode with ffmpeg into temporary PCM WAV
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+            tmp_wav = tf.name
+
+        try:
+            cmd = [
+                "ffmpeg", "-y",
+                "-i", filepath,
+                "-ac", "1",
+                "-ar", "24000",
+                "-sample_fmt", "s16",
+                tmp_wav
+            ]
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            buf = AudioBuffer.from_wav_file(tmp_wav)
+            return buf.analyze_speech_spectrum()
+        except Exception as e:
+            return {"is_speech": False, "reason": f"decode_error: {e}"}
+        finally:
+            if os.path.exists(tmp_wav):
+                try:
+                    os.remove(tmp_wav)
+                except OSError:
+                    pass

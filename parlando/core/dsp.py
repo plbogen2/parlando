@@ -176,3 +176,107 @@ class AudioBuffer:
             self.samples[tail_start + i] = blended
 
         self.samples.extend(other.samples[fade_samples:])
+
+    @staticmethod
+    def _fft(x: List[complex]) -> List[complex]:
+        """Recursive Cooley-Tukey radix-2 FFT on complex list."""
+        n = len(x)
+        if n <= 1:
+            return x
+        even = AudioBuffer._fft(x[0::2])
+        odd = AudioBuffer._fft(x[1::2])
+        t = [math.e ** (-2j * math.pi * k / n) * odd[k] for k in range(n // 2)]
+        return [even[k] + t[k] for k in range(n // 2)] + [even[k] - t[k] for k in range(n // 2)]
+
+    def compute_rms(self) -> float:
+        """Compute Root Mean Square amplitude of 16-bit PCM samples."""
+        if not self.samples:
+            return 0.0
+        mean_sq = sum(s * s for s in self.samples) / len(self.samples)
+        return math.sqrt(mean_sq)
+
+    def compute_zero_crossing_rate(self) -> float:
+        """Compute estimated zero crossing frequency (Hz)."""
+        n = len(self.samples)
+        if n < 2 or self.sample_rate <= 0:
+            return 0.0
+        zc = 0
+        for i in range(1, n):
+            if (self.samples[i - 1] <= 0 and self.samples[i] > 0) or (self.samples[i - 1] >= 0 and self.samples[i] < 0):
+                zc += 1
+        duration_s = n / float(self.sample_rate)
+        return (zc / duration_s) / 2.0 if duration_s > 0 else 0.0
+
+    def analyze_speech_spectrum(self, window_size: int = 2048, hop_size: int = 1024) -> dict:
+        """Perform spectral FFT analysis to determine energy distribution across speech formants.
+
+        Analyzes:
+        - RMS energy level
+        - Zero-crossing frequency
+        - Energy concentration in standard speech formant band (80 Hz to 4000 Hz)
+        - Spectral crest factor (formant peak prominence vs flat noise floor)
+        """
+        n_samples = len(self.samples)
+        if n_samples == 0:
+            return {"is_speech": False, "rms": 0.0, "reason": "empty_buffer"}
+
+        rms = self.compute_rms()
+        if rms < 150.0:  # Silence / noise floor threshold for 16-bit PCM
+            return {"is_speech": False, "rms": round(rms, 2), "reason": "silence_or_below_noise_floor"}
+
+        zcr_hz = self.compute_zero_crossing_rate()
+
+        # Extract windows for FFT
+        if n_samples < window_size:
+            padded = list(self.samples) + [0] * (window_size - n_samples)
+            windows = [padded]
+        else:
+            num_windows = min(30, (n_samples - window_size) // hop_size + 1)
+            windows = [list(self.samples[i * hop_size : i * hop_size + window_size]) for i in range(num_windows)]
+
+        freq_bin_width = self.sample_rate / float(window_size)
+        min_speech_bin = max(1, int(80.0 / freq_bin_width))
+        max_speech_bin = min(window_size // 2 - 1, int(4000.0 / freq_bin_width))
+
+        total_speech_power = 0.0
+        total_power = 0.0
+        peak_speech_bin_val = 0.0
+
+        # Precompute Hanning window coefficients
+        hanning = [0.5 * (1.0 - math.cos(2.0 * math.pi * i / (window_size - 1))) for i in range(window_size)]
+
+        for win in windows:
+            complex_in = [win[i] * hanning[i] for i in range(window_size)]
+            spectrum = self._fft(complex_in)
+            half_n = window_size // 2
+            for bin_idx in range(1, half_n):  # Skip DC bin 0
+                power = abs(spectrum[bin_idx]) ** 2
+                total_power += power
+                if min_speech_bin <= bin_idx <= max_speech_bin:
+                    total_speech_power += power
+                    if power > peak_speech_bin_val:
+                        peak_speech_bin_val = power
+
+        speech_ratio = (total_speech_power / total_power) if total_power > 0 else 0.0
+        num_speech_bins = max(1, max_speech_bin - min_speech_bin + 1)
+        avg_speech_bin_val = (total_speech_power / num_speech_bins) if total_speech_power > 0 else 1.0
+        crest_factor = (peak_speech_bin_val / avg_speech_bin_val) if avg_speech_bin_val > 0 else 0.0
+
+        # Speech criteria:
+        # 1. Non-silent RMS (> 150)
+        # 2. Significant power (> 50%) concentrated in human speech formant band (80Hz - 4kHz)
+        # 3. Valid speech ZCR range (30Hz - 4500Hz)
+        # 4. Formant spectral crest > 1.8 (distinct from flat white/pink noise)
+        is_speech = (rms > 150.0) and (speech_ratio >= 0.50) and (30 <= zcr_hz <= 4500) and (crest_factor > 1.8)
+
+        return {
+            "is_speech": is_speech,
+            "rms": round(rms, 2),
+            "zcr_hz": round(zcr_hz, 1),
+            "speech_band_ratio": round(speech_ratio, 4),
+            "spectral_crest_factor": round(crest_factor, 2),
+        }
+
+    def is_valid_speech(self) -> bool:
+        """Quick boolean helper to check if audio buffer contains active speech."""
+        return self.analyze_speech_spectrum().get("is_speech", False)

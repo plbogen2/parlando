@@ -48,9 +48,34 @@ class AudioBufferDSPTest(unittest.TestCase):
         s2 = array.array("h", [2000] * 2400)
         b1 = AudioBuffer(samples=s1, sample_rate=24000)
         b2 = AudioBuffer(samples=s2, sample_rate=24000)
-
         b1.crossfade_append(b2, crossfade_ms=35)
         self.assertGreater(len(b1.samples), 2400)
+
+    def test_spectral_speech_analysis_pure_tone(self):
+        # 300Hz tone has speech-band harmonic energy and formant peak
+        samples = array.array("h", [int(10000 * math.sin(2 * math.pi * 300 * i / 24000)) for i in range(24000)])
+        buf = AudioBuffer(samples=samples, sample_rate=24000)
+        analysis = buf.analyze_speech_spectrum()
+        self.assertTrue(analysis["is_speech"])
+        self.assertGreaterEqual(analysis["speech_band_ratio"], 0.8)
+        self.assertTrue(buf.is_valid_speech())
+
+    def test_spectral_speech_analysis_silence(self):
+        buf = AudioBuffer.create_silence(duration_ms=1000, sample_rate=24000)
+        analysis = buf.analyze_speech_spectrum()
+        self.assertFalse(analysis["is_speech"])
+        self.assertEqual(analysis["rms"], 0.0)
+        self.assertFalse(buf.is_valid_speech())
+
+    def test_spectral_speech_analysis_white_noise(self):
+        import random
+        rnd = random.Random(42)
+        noise_samples = array.array("h", [rnd.randint(-8000, 8000) for _ in range(24000)])
+        buf = AudioBuffer(samples=noise_samples, sample_rate=24000)
+        analysis = buf.analyze_speech_spectrum()
+        # White noise has flat spectrum across all frequencies (80-4000Hz is only ~33% of 12kHz Nyquist)
+        self.assertLess(analysis["speech_band_ratio"], 0.45)
+        self.assertFalse(buf.is_valid_speech())
 
 
 if __name__ == "__main__":

@@ -41,6 +41,18 @@ class AudioExporterTest(unittest.TestCase):
         self.assertTrue(os.path.exists(res))
         self.assertGreater(os.path.getsize(res), 0)
 
+    def test_verify_file_speech(self):
+        wav_path = os.path.join(self.tmp_dir, "speech.wav")
+        self.exporter.export(self.audio_buf, wav_path, audio_format=AudioFormat.WAV)
+        analysis = AudioExporter.verify_file_speech(wav_path)
+        self.assertTrue(analysis["is_speech"])
+        self.assertGreaterEqual(analysis["speech_band_ratio"], 0.8)
+
+        mp3_path = os.path.join(self.tmp_dir, "speech.mp3")
+        self.exporter.export(self.audio_buf, mp3_path, audio_format=AudioFormat.MP3)
+        analysis_mp3 = AudioExporter.verify_file_speech(mp3_path)
+        self.assertTrue(analysis_mp3["is_speech"])
+
 
 if __name__ == "__main__":
     unittest.main()
