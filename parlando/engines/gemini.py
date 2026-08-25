@@ -20,7 +20,8 @@ from .base import BaseVoiceEngine, VoiceEngineError
 class GeminiVoiceEngine(BaseVoiceEngine):
     """Studio neural voice synthesis via Google Gemini Multimodal Audio API."""
 
-    VOICE_MAP = {
+    # Bridge map for translating EdgeTTS neural voice names to Gemini names
+    EDGE_TO_GEMINI_MAP = {
         "en-US-ChristopherNeural": "Fenrir",
         "en-US-GuyNeural": "Puck",
         "en-GB-RyanNeural": "Charon",
@@ -31,14 +32,8 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         "en-US-RogerNeural": "Zephyr",
     }
 
-    VALID_VOICES = {"Puck", "Charon", "Kore", "Fenrir", "Aoede", "Leda", "Oran", "Zephyr"}
-
-    DIRECTOR_INSTRUCTION = (
-        "You are a world-class audiobook narrator. Read the provided text aloud with "
-        "authentic emotional depth, natural pacing, clear dialogue distinction, and rich atmospheric nuance."
-    )
-
-    EDGE_VOICE_MAP = {
+    # Fallback map for translating Gemini names to EdgeTTS names on engine failover
+    GEMINI_TO_EDGE_MAP = {
         "Fenrir": "en-US-ChristopherNeural",
         "Puck": "en-US-GuyNeural",
         "Charon": "en-GB-RyanNeural",
@@ -55,21 +50,17 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         api_key: Optional[str] = None,
         model: Optional[str] = None,
         max_retries: int = 4,
-        director_instruction: Optional[str] = None,
         **kwargs,
     ):
         self.default_voice = default_voice
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
         self.model = model or DEFAULT_GEMINI_MODEL
         self.max_retries = max_retries
-        self.director_instruction = director_instruction
 
     def resolve_voice(self, voice_name: Optional[str]) -> str:
         if not voice_name:
             return self.default_voice
-        if voice_name in self.VALID_VOICES:
-            return voice_name
-        return self.VOICE_MAP.get(voice_name, self.default_voice)
+        return self.EDGE_TO_GEMINI_MAP.get(voice_name, voice_name)
 
     def synthesize_chunk(self, chunk: NarrativeChunk, output_path: str) -> str:
         text = chunk.text.strip()
@@ -187,7 +178,7 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         try:
             from .edge import EdgeVoiceEngine
             resolved_gemini_voice = self.resolve_voice(chunk.voice or chunk.character)
-            edge_voice = self.EDGE_VOICE_MAP.get(resolved_gemini_voice, "en-US-ChristopherNeural")
+            edge_voice = self.GEMINI_TO_EDGE_MAP.get(resolved_gemini_voice, "en-US-ChristopherNeural")
             edge_engine = EdgeVoiceEngine(default_voice=edge_voice)
             import dataclasses
             fallback_chunk = dataclasses.replace(chunk, voice=edge_voice)
