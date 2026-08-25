@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hotel Clerk Voice Audition — Google Gemini Studio Voices</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #131b2e;
+      --accent: #38bdf8;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #1e293b;
+      --gemini-cyan: #22d3ee;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 32px 16px; min-height: 100vh; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 720px; }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+    .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+    .script-box { background: #0c1220; border: 1px solid var(--border); border-left: 3px solid var(--gemini-cyan); padding: 14px; border-radius: 8px; font-size: 13px; color: #cbd5e1; margin-bottom: 24px; font-style: italic; }
+    .voice-list { display: flex; flex-direction: column; gap: 14px; }
+    .voice-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: border-color 0.2s; }
+    .voice-card:hover { border-color: var(--accent); }
+    .voice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .voice-name { font-size: 16px; font-weight: 700; color: var(--accent); }
+    .voice-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: var(--gemini-cyan); padding: 2px 8px; border-radius: 999px; }
+    .voice-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+    audio { width: 100%; height: 42px; border-radius: 8px; outline: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hotel Clerk Voice Audition</h1>
+    <p class="subtitle">Comparing Gemini Studio voices for the cynical, sarcastic American capsule hotel clerk (testing against Chris Parnell / Cyril Figgis cadence vs. Charon).</p>
+    
+    <div class="script-box">
+      "Ten credits for the night. You get power and air. You want high-speed bandwidth, go rent a suite at the Hilton. Key's in the slot. Don't cause trouble in the racks, Case."
+    </div>
+
+    <div class="voice-list">
+      
+    <div class="voice-card">
+      <div class="voice-header">
+        <span class="voice-name">Charon</span>
+        <span class="voice-badge">Gemini 24kHz</span>
+      </div>
+      <p class="voice-desc">Current: Deep, gravelly / transatlantic cadence</p>
+      <audio controls preload="none" src="auditions/clerk_charon.mp3"></audio>
+    </div>
+    
+    <div class="voice-card">
+      <div class="voice-header">
+        <span class="voice-name">Puck</span>
+        <span class="voice-badge">Gemini 24kHz</span>
+      </div>
+      <p class="voice-desc">Crisp, sarcastic mid-range American male (Closest to Parnell / Cyril Figgis)</p>
+      <audio controls preload="none" src="auditions/clerk_puck.mp3"></audio>
+    </div>
+    
+    <div class="voice-card">
+      <div class="voice-header">
+        <span class="voice-name">Rasalgethi</span>
+        <span class="voice-badge">Gemini 24kHz</span>
+      </div>
+      <p class="voice-desc">Dry, raspy, cynical deadpan American</p>
+      <audio controls preload="none" src="auditions/clerk_rasalgethi.mp3"></audio>
+    </div>
+    
+    <div class="voice-card">
+      <div class="voice-header">
+        <span class="voice-name">Orus</span>
+        <span class="voice-badge">Gemini 24kHz</span>
+      </div>
+      <p class="voice-desc">Grounded, firm, exasperated American bureaucrat</p>
+      <audio controls preload="none" src="auditions/clerk_orus.mp3"></audio>
+    </div>
+    
+    <div class="voice-card">
+      <div class="voice-header">
+        <span class="voice-name">Achird</span>
+        <span class="voice-badge">Gemini 24kHz</span>
+      </div>
+      <p class="voice-desc">Light, dry, deadpan American</p>
+      <audio controls preload="none" src="auditions/clerk_achird.mp3"></audio>
+    </div>
+    
+    <div class="voice-card">
+      <div class="voice-header">
+        <span class="voice-name">Umbriel</span>
+        <span class="voice-badge">Gemini 24kHz</span>
+      </div>
+      <p class="voice-desc">Laid-back, slightly nasal American male</p>
+      <audio controls preload="none" src="auditions/clerk_umbriel.mp3"></audio>
+    </div>
+    
+    <div class="voice-card">
+      <div class="voice-header">
+        <span class="voice-name">Gacrux</span>
+        <span class="voice-badge">Gemini 24kHz</span>
+      </div>
+      <p class="voice-desc">Gruff, working-class American</p>
+      <audio controls preload="none" src="auditions/clerk_gacrux.mp3"></audio>
+    </div>
+    
+    <div class="voice-card">
+      <div class="voice-header">
+        <span class="voice-name">Algenib</span>
+        <span class="voice-badge">Gemini 24kHz</span>
+      </div>
+      <p class="voice-desc">Streetwise, fast-talking American</p>
+      <audio controls preload="none" src="auditions/clerk_algenib.mp3"></audio>
+    </div>
+    
+    </div>
+  </div>
+</body>
+</html>

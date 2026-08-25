@@ -114,12 +114,15 @@ class GeminiVoiceEngine(BaseVoiceEngine):
         voice = self.resolve_voice(chunk.voice or chunk.character)
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={api_key}"
 
+        # Frame input text with explicit verbatim reading directive to prevent conversational replies
+        tts_prompt = f"Read the following text aloud verbatim. Do not reply or add commentary:\n{text}"
+
         payload = {
             "contents": [
                 {
                     "parts": [
                         {
-                            "text": text
+                            "text": tts_prompt
                         }
                     ],
                 }
